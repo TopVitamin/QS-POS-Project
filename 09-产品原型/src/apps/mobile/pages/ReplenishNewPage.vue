@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { api } from '@/shared/api'
 import { useRequest } from '@/shared/composables/useRequest'
 import BottomBar from '../components/BottomBar.vue'
+import MPendingTag from '../components/MPendingTag.vue'
 import Note from '../components/Note.vue'
 import QtyLines from '../components/QtyLines.vue'
 import Section from '../components/Section.vue'
@@ -55,7 +56,7 @@ async function submit() {
 
     <Note>
       提交后由中枢审核，调出仓也由中枢给出；审核前和在途期间本店可用不变。
-      <template v-if="mobile.store?.mode === 'franchise'">加盟店要货走同一条调拨，货权仍在强盛，不产生货款，也不做资金校验（《7.直营与加盟代销模式说明》§2.1）</template>
+      <template v-if="mobile.store?.mode === 'franchise'">加盟店要货走同一条调拨，货权仍在强盛，不产生货款，也不做资金校验（《7.直营与加盟代销模式说明》§2.1）。区域仓还能订多少不展示 <MPendingTag id="待确认-25" /></template>
     </Note>
 
     <BottomBar>
