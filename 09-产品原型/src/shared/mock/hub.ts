@@ -597,7 +597,8 @@ export function buildSettlementLines(db: DemoDb, franchiseeId: string, start: Bi
       key: 'commission',
       label: '履约佣金',
       amount: null,
-      note: `本期核销自提${pickups}单、发起代客单${agents}单，佣金规则未定，不出金额`,
+      // 履约佣金只算自提核销和门店代发（《11.术语表》）；发起代客单记业绩，跨店时怎么分在【待确认-20】里
+      note: `本期核销自提${pickups}单；门店代发原型未做；另发起代客单${agents}单，记业绩，是否分佣未定。佣金规则未定，不出金额`,
       pending: ['待确认-20'],
     },
     { key: 'loss', label: '盘亏赔偿', amount: null, note: '损耗率、计价和判责未定，不自动生成赔偿金额', pending: ['待确认-23'] },

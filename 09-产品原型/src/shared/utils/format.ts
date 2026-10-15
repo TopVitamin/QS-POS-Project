@@ -61,6 +61,12 @@ export function maskName(name?: string | null): string {
   return `${name.slice(0, 1)}${'*'.repeat(Math.max(1, Math.min(2, name.length - 1)))}`
 }
 
+/** 提货码只露前3位：还能用的码只给顾客，后台不展示全码 */
+export function maskCode(code?: string | null): string {
+  if (!code) return EMPTY
+  return `${code.slice(0, 3)}***`
+}
+
 /** 空字符串、null、undefined 都显示 - */
 export function orEmpty(v: string | number | null | undefined): string {
   return isBlank(v) || v === '' ? EMPTY : String(v)

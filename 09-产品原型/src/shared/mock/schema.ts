@@ -89,4 +89,5 @@ export interface DemoDb {
   }
 }
 
-export const SCHEMA_VERSION = 1
+/** 种子或结构变了就加一，浏览器里的旧库会按新种子重新生成 */
+export const SCHEMA_VERSION = 2

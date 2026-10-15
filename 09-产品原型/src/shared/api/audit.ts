@@ -13,7 +13,7 @@ import {
   type LabelDef,
 } from '../config/labels'
 import type { DemoDb } from '../mock/schema'
-import { codeName, formatMoney, maskName, maskPhone, orEmpty } from '../utils/format'
+import { codeName, formatMoney, maskCode, maskName, maskPhone, orEmpty } from '../utils/format'
 import { byTimeDesc, fail, query } from './core'
 
 // ---------- 操作日志 ----------
@@ -29,7 +29,13 @@ export interface LogFilter {
 }
 
 function logInScope(db: DemoDb, log: AuditLog, f: LogFilter) {
-  if (log.storeId) return !f.storeIds || f.storeIds.includes(log.storeId)
+  if (log.storeId) {
+    if (!f.storeIds || f.storeIds.includes(log.storeId)) return true
+    // 缴款按加盟商授权：财务的到店范围里没有加盟店，也要看得到被授权加盟商的缴款登记
+    if (log.action !== '加盟缴款登记' || !f.franchiseeIds) return false
+    const franchiseeId = db.stores.find((s) => s.id === log.storeId)?.franchiseeId
+    return !!franchiseeId && f.franchiseeIds.includes(franchiseeId)
+  }
   if (log.objectType === '加盟结算单') {
     const s = db.settlements.find((x) => x.no === log.objectNo)
     return !f.franchiseeIds || (!!s && f.franchiseeIds.includes(s.franchiseeId))
@@ -293,6 +299,9 @@ function traceReturn(db: DemoDb, ret: ReturnOrder): TraceResult {
   }
 }
 
+/** 追溯页在管理端：待核销的码还能用，只露前3位 */
+const codeText = (order: PickupOrder) => (order.status === 'pending' ? maskCode(order.pickupCode) : order.pickupCode)
+
 function tracePickup(db: DemoDb, order: PickupOrder): TraceResult {
   const store = db.stores.find((s) => s.id === order.storeId)
   const records = db.verifications.filter((v) => v.pickupCode === order.pickupCode || v.omsNo === order.omsNo)
@@ -373,9 +382,9 @@ function tracePickup(db: DemoDb, order: PickupOrder): TraceResult {
   })
   return {
     kind: 'pickup',
-    keyNo: order.pickupCode,
+    keyNo: order.omsNo,
     storeId: order.storeId,
-    headline: `提货码${order.pickupCode}　${storeText(db, order.storeId)}　${PICKUP_STATUS[order.status].label}`,
+    headline: `提货码${codeText(order)}　${storeText(db, order.storeId)}　${PICKUP_STATUS[order.status].label}`,
     nodes,
     related: [],
     logs: db.auditLogs.filter((l) => l.objectNo === order.omsNo || l.objectNo === order.pickupCode),
@@ -384,6 +393,8 @@ function tracePickup(db: DemoDb, order: PickupOrder): TraceResult {
 
 function traceAgent(db: DemoDb, no: string): TraceResult {
   const o = db.agentOrders.find((x) => x.no === no)!
+  const source = o.source === 'pickup_rejected' ? db.pickups.find((p) => p.pickupCode === o.sourceRef) : undefined
+  const sourceCode = source ? codeText(source) : maskCode(o.sourceRef)
   const nodes: TraceNode[] = [
     {
       key: 'agent',
@@ -396,7 +407,7 @@ function traceAgent(db: DemoDb, no: string): TraceResult {
       fields: [
         { label: '发起门店', value: storeText(db, o.storeId) },
         { label: '导购', value: who(db, o.guideJobNo) },
-        { label: '来源', value: o.source === 'pickup_rejected' ? `核销被拒转代发（${o.sourceRef ?? '-'}）` : o.source === 'mobile' ? '移动端' : '收银端' },
+        { label: '来源', value: o.source === 'pickup_rejected' ? `核销被拒转代发（提货码${sourceCode}）` : o.source === 'mobile' ? '移动端' : '收银端' },
         { label: '商品', value: o.items.map((i) => `${i.name}×${i.qty}`).join('、') },
         { label: '参考金额', value: formatMoney(o.referenceAmount) },
       ],
@@ -432,7 +443,7 @@ function traceAgent(db: DemoDb, no: string): TraceResult {
     storeId: o.storeId,
     headline: `${storeText(db, o.storeId)}　${o.createdAt}　${AGENT_STATUS[o.status].label}`,
     nodes,
-    related: o.sourceRef && o.source === 'pickup_rejected' ? [{ label: '来源提货码', no: o.sourceRef }] : [],
+    related: source ? [{ label: `来源提货单（码${sourceCode}）`, no: source.omsNo }] : [],
     logs: db.auditLogs.filter((l) => l.objectNo === o.no),
   }
 }

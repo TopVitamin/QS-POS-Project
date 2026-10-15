@@ -5,7 +5,7 @@ import { useIntervalFn, useNow } from '@vueuse/core'
 import { api } from '@/shared/api'
 import { errorInfo, useRequest } from '@/shared/composables/useRequest'
 import { DUTY, STORE_MODE } from '@/shared/config/labels'
-import { can } from '@/shared/config/permissions'
+import { can, canEnter } from '@/shared/config/permissions'
 import BillNo from '@/shared/naive/BillNo.vue'
 import DemoBadge from '@/shared/naive/DemoBadge.vue'
 import PendingTag from '@/shared/naive/PendingTag.vue'
@@ -41,9 +41,7 @@ const shiftOnRegister = (registerNo: string) => openShifts.value?.find((s) => s.
 const shiftOfPerson = (jobNo: string) => openShifts.value?.find((s) => s.cashierJobNo === jobNo)
 
 /** 收银端给导购和收银职责用；总部、财务、加盟商账号走管理端 */
-const accounts = computed(() =>
-  (employees.value ?? []).filter((e) => e.active && e.storeIds.includes(session.storeId) && (can(e, 'sale.open') || can(e, 'payment.collect'))),
-)
+const accounts = computed(() => (employees.value ?? []).filter((e) => e.active && e.storeIds.includes(session.storeId) && canEnter(e, 'cashier')))
 
 function pickStore(id: string) {
   if (session.storeId === id) return
@@ -87,7 +85,7 @@ async function login() {
   err.value = null
   try {
     const u = await api.master.login(jobNo.value, pin.value)
-    if (!can(u, 'sale.open') && !can(u, 'payment.collect')) {
+    if (!canEnter(u, 'cashier')) {
       err.value = { message: `${u.name}没有导购或收银职责，不能进收银端`, basis: '总部、财务和加盟商账号请用管理端' }
       return
     }

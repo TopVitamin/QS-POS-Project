@@ -101,7 +101,8 @@ export const EMPLOYEES: Employee[] = [
     active: true,
     createdAt: created,
   },
-  { id: 'e07', jobNo: 'SYS001', name: '林晓', duties: ['sysAdmin'], storeIds: [], employer: 'qs', pin: '1234', title: '系统管理', active: true, createdAt: created },
+  // 主数据和日志也按授权到店看，不到「全部未来新店」（《8.角色权限原则》§二），演示时授权四家店
+  { id: 'e07', jobNo: 'SYS001', name: '林晓', duties: ['sysAdmin'], storeIds: ['s01', 's02', 's03', 's04'], employer: 'qs', pin: '1234', title: '系统管理', active: true, createdAt: created },
   { id: 'e08', jobNo: 'JMA001', name: '赵磊', duties: ['franchiseAdmin'], storeIds: ['s03'], franchiseeId: 'fa', employer: 'franchisee', pin: '1234', title: '加盟商管理', active: true, createdAt: created },
   { id: 'e09', jobNo: 'JMA002', name: '吴婷', duties: ['franchiseFinance'], storeIds: ['s03'], franchiseeId: 'fa', employer: 'franchisee', pin: '1234', title: '加盟商财务', active: true, createdAt: created },
   { id: 'e10', jobNo: 'JMA101', name: '孙浩', duties: ['storeManager', 'cashier', 'guide'], storeIds: ['s03'], franchiseeId: 'fa', employer: 'franchisee', pin: '1234', title: '店长（加盟商员工）', active: true, createdAt: created },

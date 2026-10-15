@@ -1,7 +1,7 @@
 import type { Cents, DateTimeText } from './common'
 
 export interface Category {
-  /** ERP 规则：一级01、二级0102、三级010203 */
+  /** 演示分类编码，每级两位。正式编码以上游主数据为准 */
   code: string
   name: string
   parentCode?: string
@@ -10,7 +10,7 @@ export interface Category {
 }
 
 export interface Product {
-  /** ERP 商品编码：SP+三级分类代码+4位序号 */
+  /** 沿用 ERP 商品编码，POS 不按门店重编。演示 SKU 是占位码 */
   sku: string
   name: string
   spec: string

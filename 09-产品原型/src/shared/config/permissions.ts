@@ -191,3 +191,21 @@ export function canAuthorizeFor(user: Who | null | undefined, storeId: string, s
 }
 
 export const LEVEL_TEXT: Record<Level, string> = { do: '办', view: '看', auth: '授', none: '-' }
+
+export type AppEnd = 'cashier' | 'mobile' | 'admin'
+
+/**
+ * 三个端各给哪些职责用（设计说明5.1），兼岗的账号有一个职责能进就能进。
+ * 店长在收银端只当授权人，输工号和PIN确认，不用登录收银端
+ */
+export const END_DUTIES: Record<AppEnd, Duty[]> = {
+  cashier: ['guide', 'cashier'],
+  mobile: ['guide', 'storeManager'],
+  admin: ['storeManager', 'hqOps', 'finance', 'franchiseAdmin', 'franchiseFinance', 'sysAdmin'],
+}
+
+export const END_LABEL: Record<AppEnd, string> = { cashier: '收银端', mobile: '移动端', admin: '管理端' }
+
+export function canEnter(user: Pick<Employee, 'duties'> | null | undefined, end: AppEnd): boolean {
+  return !!user && user.duties.some((d) => END_DUTIES[end].includes(d))
+}
