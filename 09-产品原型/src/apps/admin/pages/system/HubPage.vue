@@ -218,7 +218,7 @@ function reset() {
 
         <n-card size="small">
           <template #header>代客单履约 <span class="qs-num text-t3">{{ ov.agentOrders.length }}</span></template>
-          <template #header-extra><AssumptionTag k="carrier" /></template>
+          <template #header-extra><span class="flex gap-1.5"><AssumptionTag k="regionalNodes" /><AssumptionTag k="carrier" /></span></template>
           <div v-for="o in ov.agentOrders" :key="o.no" class="flex items-center gap-3 border-b border-line py-2.5 last:border-0">
             <div class="min-w-0 flex-1 leading-tight">
               <div class="flex items-center gap-2 text-13px"><BillNo :no="o.no" plain /><StatusTag :def="AGENT_STATUS[o.status]" /></div>

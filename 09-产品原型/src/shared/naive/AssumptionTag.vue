@@ -21,7 +21,7 @@ const a = computed(() => ASSUMPTIONS[props.k])
     <div class="flex flex-col gap-1.5 py-1 text-13px leading-20px">
       <div class="font-600 text-t1">{{ a.title }}</div>
       <div class="text-t2">{{ a.value }}</div>
-      <div class="flex flex-wrap items-center gap-1 pt-1">
+      <div v-if="a.pending.length" class="flex flex-wrap items-center gap-1 pt-1">
         <span class="text-12px text-t3">口径待定：</span>
         <PendingTag :id="a.pending" />
       </div>

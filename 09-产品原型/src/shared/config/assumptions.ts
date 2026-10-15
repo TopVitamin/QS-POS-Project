@@ -96,6 +96,12 @@ export const ASSUMPTIONS = {
     value: '演示数据只出现叙事里的顺丰',
     pending: ['待确认-47'],
   },
+  regionalNodes: {
+    key: 'regionalNodes',
+    title: '区域仓',
+    value: '路由可选的五个区域仓取自阶段5叙事，不代表当前仓网（《12.待对齐事项》A02）；逻辑仓编码是占位码',
+    pending: [],
+  },
   replenishReview: {
     key: 'replenishReview',
     title: '要货审核',

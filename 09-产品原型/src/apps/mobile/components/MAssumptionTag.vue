@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { ASSUMPTIONS, type AssumptionKey } from '@/shared/config/assumptions'
 import { pendingText } from '@/shared/config/pending'
+import type { PendingId } from '@/shared/types'
 import { explain } from '../feedback'
 
 /** 演示假设的手机版：点一下看原型取的值和挂着的【待确认】 */
@@ -9,8 +10,9 @@ const props = defineProps<{ k: AssumptionKey }>()
 const a = computed(() => ASSUMPTIONS[props.k])
 
 function open() {
-  const pending = a.value.pending.map((id) => `【${id}】${pendingText(id)}`).join('\n')
-  explain(`演示假设：${a.value.title}`, `${a.value.value}\n\n口径待定：\n${pending}\n\n假设值不能写回背景文档成为规则`)
+  const ids: PendingId[] = a.value.pending
+  const pending = ids.length ? `\n\n口径待定：\n${ids.map((id) => `【${id}】${pendingText(id)}`).join('\n')}` : ''
+  explain(`演示假设：${a.value.title}`, `${a.value.value}${pending}\n\n假设值不能写回背景文档成为规则`)
 }
 </script>
 
