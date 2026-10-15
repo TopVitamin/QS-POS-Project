@@ -51,7 +51,7 @@ const ENDS: { key: AppEnd; href: string; icon: string; tint: string; tech: strin
 const ROUTES: { title: string; steps: string[] }[] = [
   {
     title: '收银开单到交班',
-    steps: ['收银端选万象天地店、1号收银台，用 QS1002 李雨桐登录开班', '扫码或点商品开单，带会员和券看促销计算', '组合支付后出小票', '「交班」点现金、写差异说明后封班'],
+    steps: ['收银端选万象天地店、02号收银台，用 QS1001 王海登录，选备用金开班', '扫码或点商品开单，带会员和券看促销计算', '可以组合支付，收齐后出小票', '「交班」清点现金，有差异要写说明才能交班'],
   },
   {
     title: '自提核销',

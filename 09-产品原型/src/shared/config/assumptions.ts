@@ -135,7 +135,7 @@ export const ASSUMPTIONS = {
   settlementPeriod: {
     key: 'settlementPeriod',
     title: '结算周期',
-    value: '演示结算单取10月1日至14日，只为展示版式',
+    value: '演示结算单取今天之前的7个营业日，只为展示版式',
     pending: ['待确认-19'],
   },
 } satisfies Record<string, Assumption>
