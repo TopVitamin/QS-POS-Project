@@ -744,7 +744,7 @@ function generate(
         st!.submittedAt = spec.submit
       })
     }
-    if (spec.post) schedule(spec.post[0], () => void hub.postStocktake(db, st!.no, spec.post![1], spec.post![0]))
+    if (spec.post) schedule(spec.post[0], () => void hub.postStocktake(db, st!.no, { operatorJobNo: st!.creatorJobNo, authorizerJobNo: spec.post![1] }, spec.post![0]))
   }
   stocktake({
     storeId: 's01',

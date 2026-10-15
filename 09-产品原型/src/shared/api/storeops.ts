@@ -149,7 +149,7 @@ export function postStocktake(input: { no: string; operatorJobNo: string; author
     const a = db.employees.find((e) => e.jobNo.toUpperCase() === input.authorizer.jobNo.trim().toUpperCase())
     if (!a || a.pin !== input.authorizer.pin) fail('授权人工号或PIN不对')
     if (!canAuthorizeFor(a, st.storeId, db.stores)) fail(`${a.name}不能为这家店授权`, '授权层级见【待确认-51】')
-    return hub.postStocktake(db, st.no, a.jobNo)
+    return hub.postStocktake(db, st.no, { operatorJobNo: input.operatorJobNo, authorizerJobNo: a.jobNo })
   })
 }
 

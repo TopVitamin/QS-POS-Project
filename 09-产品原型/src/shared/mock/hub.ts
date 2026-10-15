@@ -429,7 +429,12 @@ export function postReceipt(
 
 // ---------- 盘点：授权后中枢调账 ----------
 
-export function postStocktake(db: DemoDb, no: string, authorizerJobNo: string, at: DateTimeText = nowText()): Stocktake {
+export function postStocktake(
+  db: DemoDb,
+  no: string,
+  { operatorJobNo, authorizerJobNo }: { operatorJobNo: string; authorizerJobNo: string },
+  at: DateTimeText = nowText(),
+): Stocktake {
   const st = db.stocktakes.find((s) => s.no === no)
   if (!st || st.status !== 'submitted') throw new HubRejection('只有已提交的盘点单能过账')
   const diffs = stocktakeDiffs(st.lines)
@@ -441,7 +446,7 @@ export function postStocktake(db: DemoDb, no: string, authorizerJobNo: string, a
   audit(db, {
     action: '盘点审核',
     at,
-    operatorJobNo: st.creatorJobNo,
+    operatorJobNo,
     authorizerJobNo,
     storeId: st.storeId,
     objectType: '盘点单',
