@@ -36,28 +36,28 @@ const show = computed({
 })
 
 const shipmentColumns: DataTableColumns<InboundShipment> = [
-  { title: '调拨出库单（中枢）', key: 'outboundNo', width: 240, render: (s) => two(bill(s.outboundNo), admin.storeText(s.storeId)) },
+  { title: '调拨出库单（中枢）', key: 'outboundNo', width: 240, fixed: 'left', render: (s) => two(bill(s.outboundNo), admin.storeText(s.storeId)) },
   { title: '调出仓', key: 'source', width: 110, render: (s) => s.sourceNodeName },
   { title: '来源要货单', key: 'rep', width: 230, render: (s) => (s.replenishmentNo ? bill(s.replenishmentNo) : muted('-')) },
   { title: '商品', key: 'lines', minWidth: 220, ellipsis: { tooltip: true }, render: (s) => two(s.lines.map((l) => `${l.name}×${l.qty}`).join('、'), `${sum(s.lines.map((l) => l.qty))}件`) },
   { title: '发运时间', key: 'shippedAt', width: 170, render: (s) => dateTime(s.shippedAt) },
   { title: '收货单', key: 'receiptNo', width: 230, render: (s) => (s.receiptNo ? bill(s.receiptNo) : muted('未收货')) },
-  { title: '状态', key: 'status', width: 100, render: (s) => status(SHIPMENT_STATUS[s.status]) },
+  { title: '状态', key: 'status', width: 100, fixed: 'right', render: (s) => status(SHIPMENT_STATUS[s.status]) },
 ]
 
 const receiptColumns: DataTableColumns<GoodsReceipt> = [
-  { title: '收货单号', key: 'no', width: 250, render: (r) => two(bill(r.no), admin.storeText(r.storeId)) },
+  { title: '收货单号', key: 'no', width: 250, fixed: 'left', render: (r) => two(bill(r.no), admin.storeText(r.storeId)) },
   { title: '来源出库单', key: 'outboundNo', width: 220, render: (r) => bill(r.outboundNo) },
   { title: '收货时间', key: 'receivedAt', width: 170, render: (r) => dateTime(r.receivedAt) },
   { title: '经办', key: 'operator', width: 110, render: (r) => admin.who(r.operatorJobNo) },
   { title: '出库', key: 'shipped', width: 70, align: 'right', render: (r) => h('span', { class: 'qs-num' }, sum(r.lines.map((l) => l.shippedQty))) },
   { title: '实收', key: 'received', width: 70, align: 'right', render: (r) => h('span', { class: 'qs-num font-600' }, sum(r.lines.map((l) => l.receivedQty))) },
   { title: '差异单', key: 'discrepancyNo', width: 230, render: (r) => (r.discrepancyNo ? bill(r.discrepancyNo) : h('span', { class: 'text-ok' }, '无差异')) },
-  { title: '中枢结果', key: 'hub', width: 200, render: (r) => bill(r.hubResultNo) },
+  { title: '中枢结果', key: 'hub', width: 200, fixed: 'right', render: (r) => bill(r.hubResultNo) },
 ]
 
 const discrepancyColumns: DataTableColumns<Discrepancy> = [
-  { title: '差异单号', key: 'no', width: 250, render: (d) => two(bill(d.no), admin.storeText(d.storeId)) },
+  { title: '差异单号', key: 'no', width: 250, fixed: 'left', render: (d) => two(bill(d.no), admin.storeText(d.storeId)) },
   { title: '收货单', key: 'receiptNo', width: 230, render: (d) => bill(d.receiptNo, true) },
   { title: '来源出库单', key: 'outboundNo', width: 220, render: (d) => bill(d.outboundNo) },
   {
@@ -73,7 +73,7 @@ const discrepancyColumns: DataTableColumns<Discrepancy> = [
   },
   { title: '登记时间', key: 'createdAt', width: 170, render: (d) => dateTime(d.createdAt) },
   { title: '经办', key: 'operator', width: 110, render: (d) => admin.who(d.operatorJobNo) },
-  { title: '状态', key: 'status', width: 110, render: (d) => status(DISCREPANCY_STATUS[d.status]) },
+  { title: '状态', key: 'status', width: 110, fixed: 'right', render: (d) => status(DISCREPANCY_STATUS[d.status]) },
 ]
 
 const { data: detail } = useRequest(() => (openNo.value ? api.storeops.shipment(openNo.value) : Promise.resolve(null)), { watch: [openNo] })

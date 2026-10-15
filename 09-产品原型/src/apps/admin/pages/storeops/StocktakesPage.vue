@@ -36,7 +36,7 @@ const diffSummary = (s: Stocktake) => {
 }
 
 const columns: DataTableColumns<Stocktake> = [
-  { title: '盘点单号', key: 'no', width: 250, render: (s) => two(bill(s.no), admin.storeText(s.storeId)) },
+  { title: '盘点单号', key: 'no', width: 250, fixed: 'left', render: (s) => two(bill(s.no), admin.storeText(s.storeId)) },
   {
     title: '范围',
     key: 'scope',
@@ -63,7 +63,7 @@ const columns: DataTableColumns<Stocktake> = [
   { title: '提交', key: 'submittedAt', width: 170, render: (s) => dateTime(s.submittedAt) },
   { title: '授权过账', key: 'auth', width: 170, render: (s) => (s.authorizedAt ? two(admin.who(s.authorizerJobNo), s.authorizedAt) : muted('-')) },
   { title: '中枢调账', key: 'hub', width: 200, render: (s) => (s.hubResultNo ? bill(s.hubResultNo) : muted('-')) },
-  { title: '状态', key: 'status', width: 110, render: (s) => status(STOCKTAKE_STATUS[s.status]) },
+  { title: '状态', key: 'status', width: 110, fixed: 'right', render: (s) => status(STOCKTAKE_STATUS[s.status]) },
 ]
 const statusOptions = Object.entries(STOCKTAKE_STATUS).map(([value, d]) => ({ label: d.label, value }))
 

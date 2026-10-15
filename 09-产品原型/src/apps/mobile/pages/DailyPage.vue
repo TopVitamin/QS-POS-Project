@@ -103,7 +103,7 @@ const banner = computed(() => {
           <div class="shrink-0 text-right">
             <MoneyText :value="s.summary?.expectedCash" class="text-13px" />
             <div class="text-11px" :class="s.status === 'open' ? 'text-info' : s.cashDiff ? 'text-bad' : 'text-t3'">
-              {{ s.status === 'open' ? '应有现金·未交班' : s.cashDiff ? `差异 ${formatMoney(s.cashDiff, { sign: true })}` : '应有现金·无差异' }}
+              {{ s.status === 'open' ? '应有现金·未交班' : s.cashDiff ? `应有现金·差异 ${formatMoney(s.cashDiff, { sign: true })}` : '应有现金·无差异' }}
             </div>
           </div>
         </div>

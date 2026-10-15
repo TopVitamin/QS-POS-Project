@@ -51,7 +51,7 @@ const codeText = (code: string, omsNo?: string) => (omsNo && !settledOms.value.h
 const trace = (q: string) => (admin.has('audit.view') ? link({ name: 'audit-trace', query: { q } }, '追溯') : null)
 
 const orderColumns: DataTableColumns<PickupOrder> = [
-  { title: 'OMS履约单号', key: 'omsNo', width: 250, render: (o) => two(bill(o.omsNo), h('span', { class: 'font-mono' }, `小程序 ${o.channelOrderNo}`)) },
+  { title: 'OMS履约单号', key: 'omsNo', width: 250, fixed: 'left', render: (o) => two(bill(o.omsNo), h('span', { class: 'font-mono' }, `小程序 ${o.channelOrderNo}`)) },
   { title: '自提门店', key: 'storeId', width: 160, render: (o) => admin.storeText(o.storeId) },
   { title: '商品', key: 'items', minWidth: 190, ellipsis: { tooltip: true }, render: (o) => o.items.map((i) => `${i.name}×${i.qty}`).join('、') },
   { title: '线上已付', key: 'paidAmount', width: 110, align: 'right', render: (o) => money(o.paidAmount) },
@@ -73,14 +73,14 @@ const orderColumns: DataTableColumns<PickupOrder> = [
       ),
   },
   { title: '下发时间', key: 'createdAt', width: 170, render: (o) => dateTime(o.createdAt) },
-  { title: '状态', key: 'status', width: 90, render: (o) => status(PICKUP_STATUS[o.status]) },
   {
     title: '核销',
     key: 'verificationNo',
     width: 230,
     render: (o) => (o.verificationNo ? two(bill(o.verificationNo), `${o.verifiedAt?.slice(5, 16)} · ${admin.who(o.verifierJobNo)}`) : muted('-')),
   },
-  { title: '', key: 'trace', width: 60, render: (o) => trace(o.omsNo) },
+  { title: '状态', key: 'status', width: 90, fixed: 'right', render: (o) => status(PICKUP_STATUS[o.status]) },
+  { title: '', key: 'trace', width: 60, fixed: 'right', render: (o) => trace(o.omsNo) },
 ]
 
 /** 范围里只有加盟店时整列不出 */
@@ -89,7 +89,7 @@ const shownOrderColumns = computed(() =>
 )
 
 const recordColumns: DataTableColumns<VerificationRecord> = [
-  { title: '时间', key: 'at', width: 170, render: (r) => dateTime(r.at) },
+  { title: '时间', key: 'at', width: 170, fixed: 'left', render: (r) => dateTime(r.at) },
   { title: '门店', key: 'storeId', width: 160, render: (r) => admin.storeText(r.storeId) },
   {
     title: '结果',

@@ -23,14 +23,14 @@ const { data, loading } = useRequest(() => api.franchise.settlements(filter.valu
 
 const lineOf = (s: FranchiseSettlement, key: string) => s.lines.find((l) => l.key === key)?.amount ?? null
 const columns: DataTableColumns<FranchiseSettlement> = [
-  { title: '结算单号', key: 'no', width: 240, render: (s) => two(bill(s.no), admin.franchiseeText(s.franchiseeId)) },
+  { title: '结算单号', key: 'no', width: 240, fixed: 'left', render: (s) => two(bill(s.no), admin.franchiseeText(s.franchiseeId)) },
   { title: '结算期间', key: 'period', width: 200, render: (s) => h('span', { class: 'qs-num' }, `${s.periodStart} 至 ${s.periodEnd}`) },
   { title: '应缴合计', key: 'dues', width: 130, align: 'right', render: (s) => money(lineOf(s, 'dues'), { strong: true }) },
   { title: '已缴并核对', key: 'confirmed', width: 130, align: 'right', render: (s) => money(lineOf(s, 'confirmed'), { tone: 'ok' }) },
   { title: '未缴或待核对', key: 'outstanding', width: 130, align: 'right', render: (s) => money(lineOf(s, 'outstanding'), { tone: lineOf(s, 'outstanding') ? 'promo' : 'muted' }) },
   { title: '分成、佣金、赔偿', key: 'pending', width: 150, render: () => muted('规则未定，不出金额') },
   { title: '出单时间', key: 'generatedAt', width: 170, render: (s) => dateTime(s.generatedAt) },
-  { title: '状态', key: 'status', width: 100, render: (s) => status(SETTLEMENT_STATUS[s.status]) },
+  { title: '状态', key: 'status', width: 100, fixed: 'right', render: (s) => status(SETTLEMENT_STATUS[s.status]) },
 ]
 
 const openNo = ref('')

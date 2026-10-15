@@ -32,7 +32,7 @@ const total = computed(() => data.value.reduce((s, r) => s + r.total, 0))
 const methodsOf = (r: ReturnOrder) => [...new Set(r.refunds.map((p) => PAY_METHOD[p.method].short))].join(' + ')
 
 const columns: DataTableColumns<ReturnOrder> = [
-  { title: '退货单号', key: 'no', width: 250, render: (r) => two(bill(r.no), admin.storeText(r.storeId)) },
+  { title: '退货单号', key: 'no', width: 250, fixed: 'left', render: (r) => two(bill(r.no), admin.storeText(r.storeId)) },
   { title: '退货时间', key: 'createdAt', width: 170, render: (r) => dateTime(r.createdAt) },
   { title: '原销售单', key: 'originalSaleNo', width: 230, render: (r) => link({ name: 'sale-detail', params: { no: r.originalSaleNo } }, h(BillNo, { no: r.originalSaleNo, plain: true })) },
   { title: '退货商品', key: 'lines', minWidth: 200, ellipsis: { tooltip: true }, render: (r) => r.lines.map((l) => `${l.name}×${l.qty}`).join('、') },
@@ -40,7 +40,7 @@ const columns: DataTableColumns<ReturnOrder> = [
   { title: '原路退回', key: 'refunds', width: 110, render: (r) => methodsOf(r) },
   { title: '原因', key: 'reason', width: 96 },
   { title: '经办', key: 'operator', width: 110, render: (r) => admin.who(r.operatorJobNo) },
-  { title: '中枢', key: 'hub', width: 110, render: (r) => h(StatusTag, { def: HUB_SYNC[r.hubSync.status] }) },
+  { title: '中枢', key: 'hub', width: 110, fixed: 'right', render: (r) => h(StatusTag, { def: HUB_SYNC[r.hubSync.status] }) },
 ]
 
 const openNo = ref('')

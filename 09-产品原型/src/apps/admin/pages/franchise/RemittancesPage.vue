@@ -21,14 +21,14 @@ const filter = computed(() => ({ franchiseeIds: admin.franchiseeIds, status: st.
 const { data, loading } = useRequest(() => api.franchise.remittances(filter.value), { watch: [filter] })
 
 const columns: DataTableColumns<Remittance> = [
-  { title: '凭证号', key: 'voucherNo', width: 200, render: (r) => two(mono(r.voucherNo), admin.franchiseeText(r.franchiseeId)) },
+  { title: '凭证号', key: 'voucherNo', width: 200, fixed: 'left', render: (r) => two(mono(r.voucherNo), admin.franchiseeText(r.franchiseeId)) },
   { title: '缴款方式', key: 'method', width: 100 },
   { title: '对应应缴', key: 'dueNos', minWidth: 240, render: (r) => h('div', { class: 'flex flex-col font-mono text-12.5px leading-18px' }, r.dueNos.map((n) => h('span', null, n))) },
   { title: '金额', key: 'amount', width: 130, align: 'right', render: (r) => money(r.amount, { strong: true }) },
   { title: '登记', key: 'registeredAt', width: 170, render: (r) => two(dateTime(r.registeredAt), admin.who(r.registrantJobNo)) },
   { title: '中枢核对', key: 'confirmedAt', width: 170, render: (r) => (r.confirmedAt ? dateTime(r.confirmedAt) : muted('等中枢核对')) },
   { title: '备注', key: 'note', width: 160, ellipsis: { tooltip: true }, render: (r) => r.note ?? '' },
-  { title: '状态', key: 'status', width: 110, render: (r) => status(REMITTANCE_STATUS[r.status]) },
+  { title: '状态', key: 'status', width: 110, fixed: 'right', render: (r) => status(REMITTANCE_STATUS[r.status]) },
 ]
 const statusOptions = Object.entries(REMITTANCE_STATUS).map(([value, d]) => ({ label: d.label, value }))
 

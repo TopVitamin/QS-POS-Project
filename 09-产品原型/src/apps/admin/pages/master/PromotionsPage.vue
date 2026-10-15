@@ -44,7 +44,7 @@ const columns: DataTableColumns<Promotion> = [
   { title: '参与商品', key: 'scope', width: 200, ellipsis: { tooltip: true }, render: (p) => scopeText(p) },
   { title: '门店', key: 'storeIds', width: 150, ellipsis: { tooltip: true }, render: (p) => storesText(p) },
   { title: '有效期', key: 'period', width: 200, render: (p) => two(h('span', { class: 'qs-num' }, p.startAt.slice(0, 16)), h('span', { class: 'qs-num' }, `至 ${p.endAt.slice(0, 16)}`)) },
-  { title: '状态', key: 'status', width: 80, render: (p) => h(NTag, { size: 'small', bordered: false, type: p.status === 'active' ? 'success' : 'default' }, () => (p.status === 'active' ? '进行中' : '已结束')) },
+  { title: '状态', key: 'status', width: 80, fixed: 'right', render: (p) => h(NTag, { size: 'small', bordered: false, type: p.status === 'active' ? 'success' : 'default' }, () => (p.status === 'active' ? '进行中' : '已结束')) },
 ]
 
 const couponColumns: DataTableColumns<CouponTemplate> = [

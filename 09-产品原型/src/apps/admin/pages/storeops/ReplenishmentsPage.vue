@@ -29,7 +29,7 @@ const { data, loading } = useRequest(() => api.storeops.replenishments(filter.va
 const qtyText = (r: Replenishment) => `${r.lines.length}个SKU · ${r.lines.reduce((s, l) => s + l.qty, 0)}件`
 
 const columns: DataTableColumns<Replenishment> = [
-  { title: '要货单号', key: 'no', width: 250, render: (r) => two(bill(r.no), admin.storeText(r.storeId)) },
+  { title: '要货单号', key: 'no', width: 250, fixed: 'left', render: (r) => two(bill(r.no), admin.storeText(r.storeId)) },
   { title: '提交时间', key: 'createdAt', width: 170, render: (r) => dateTime(r.createdAt) },
   { title: '提交人', key: 'creator', width: 110, render: (r) => admin.who(r.creatorJobNo) },
   { title: '商品', key: 'lines', minWidth: 220, ellipsis: { tooltip: true }, render: (r) => two(r.lines.map((l) => `${l.name}×${l.qty}`).join('、'), qtyText(r)) },
@@ -37,7 +37,7 @@ const columns: DataTableColumns<Replenishment> = [
   { title: '中枢审核', key: 'review', width: 190, ellipsis: { tooltip: true }, render: (r) => (r.hub.reviewedAt ? two(r.hub.reviewNote ?? '', r.hub.reviewedAt) : muted('等中枢审核')) },
   { title: '调出仓', key: 'source', width: 100, render: (r) => r.hub.sourceNodeName ?? muted('-') },
   { title: '调拨出库单', key: 'outbound', width: 220, render: (r) => (r.hub.outboundNo ? bill(r.hub.outboundNo) : muted('-')) },
-  { title: '状态', key: 'status', width: 110, render: (r) => status(REPLENISH_STATUS[r.status]) },
+  { title: '状态', key: 'status', width: 110, fixed: 'right', render: (r) => status(REPLENISH_STATUS[r.status]) },
 ]
 const statusOptions = Object.entries(REPLENISH_STATUS).map(([value, d]) => ({ label: d.label, value }))
 

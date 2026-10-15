@@ -35,7 +35,7 @@ const sourceCode = (code?: string) => {
 }
 
 const columns: DataTableColumns<AgentOrder> = [
-  { title: '代客单号', key: 'no', width: 250, render: (o) => two(bill(o.no), admin.storeText(o.storeId)) },
+  { title: '代客单号', key: 'no', width: 250, fixed: 'left', render: (o) => two(bill(o.no), admin.storeText(o.storeId)) },
   { title: '提交时间', key: 'createdAt', width: 170, render: (o) => dateTime(o.createdAt) },
   { title: '来源', key: 'source', width: 130, render: (o) => two(SOURCE[o.source], o.source === 'pickup_rejected' ? h('span', { class: 'font-mono' }, sourceCode(o.sourceRef)) : undefined) },
   { title: '导购（业绩归属）', key: 'guide', width: 140, render: (o) => admin.who(o.guideJobNo) },
@@ -49,7 +49,7 @@ const columns: DataTableColumns<AgentOrder> = [
   },
   { title: 'OMS路由', key: 'oms', width: 230, render: (o) => (o.oms.omsNo ? two(bill(o.oms.omsNo), orEmpty(o.oms.nodeName)) : muted('-')) },
   { title: '运单', key: 'tracking', width: 170, render: (o) => (o.oms.trackingNo ? two(mono(o.oms.trackingNo), o.oms.carrier) : muted('-')) },
-  { title: '状态', key: 'status', width: 100, render: (o) => status(AGENT_STATUS[o.status]) },
+  { title: '状态', key: 'status', width: 100, fixed: 'right', render: (o) => status(AGENT_STATUS[o.status]) },
 ]
 
 /** 范围里只有加盟店时整列不出 */

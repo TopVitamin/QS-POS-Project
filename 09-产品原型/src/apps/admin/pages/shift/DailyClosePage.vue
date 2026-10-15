@@ -75,7 +75,7 @@ const range = ref<[string, string] | null>([addDays(todayBizDate(), -7), todayBi
 const historyFilter = computed(() => ({ storeIds: admin.storeIds, from: range.value?.[0], to: range.value?.[1] }))
 const { data: closes, loading: loadingCloses } = useRequest(() => api.shift.closes(historyFilter.value), { watch: [historyFilter] })
 const columns: DataTableColumns<DailyClose> = [
-  { title: '日结单号', key: 'no', width: 230, render: (d) => bill(d.no) },
+  { title: '日结单号', key: 'no', width: 230, fixed: 'left', render: (d) => bill(d.no) },
   { title: '门店', key: 'storeId', width: 170, render: (d) => admin.storeText(d.storeId) },
   { title: '营业日', key: 'bizDate', width: 130, render: (d) => h('span', { class: 'qs-num' }, `${d.bizDate} ${weekdayOf(d.bizDate)}`) },
   { title: '封账', key: 'closedAt', width: 170, render: (d) => two(dateTime(d.closedAt), admin.who(d.closerJobNo)) },
@@ -83,7 +83,7 @@ const columns: DataTableColumns<DailyClose> = [
   { title: '成交/退货', key: 'count', width: 96, align: 'right', render: (d) => h('span', { class: 'qs-num' }, `${d.summary.saleCount} / ${d.summary.returnCount}`) },
   { title: '成交净额', key: 'net', width: 120, align: 'right', render: (d) => money(d.summary.net, { strong: true }) },
   { title: '核销/代客', key: 'fulfil', width: 96, align: 'right', render: (d) => h('span', { class: 'qs-num text-t2' }, `${d.summary.pickupsVerified} / ${d.summary.agentOrders}`) },
-  { title: '加盟应缴', key: 'due', width: 230, render: (d) => (d.franchiseDueNo ? bill(d.franchiseDueNo) : muted('直营不生成')) },
+  { title: '加盟应缴', key: 'due', width: 230, fixed: 'right', render: (d) => (d.franchiseDueNo ? bill(d.franchiseDueNo) : muted('直营不生成')) },
 ]
 function pick(d: DailyClose) {
   storeId.value = d.storeId
@@ -195,7 +195,7 @@ function pick(d: DailyClose) {
               <div class="text-right leading-tight">
                 <MoneyText :value="s.summary?.expectedCash" class="text-13px" />
                 <div class="text-12px" :class="s.status === 'open' ? 'text-info' : s.cashDiff ? 'text-bad' : 'text-t3'">
-                  {{ s.status === 'open' ? '未交班' : s.cashDiff ? `差异 ${formatMoney(s.cashDiff, { sign: true })}` : '无差异' }}
+                  {{ s.status === 'open' ? '应有现金·未交班' : s.cashDiff ? `应有现金·差异 ${formatMoney(s.cashDiff, { sign: true })}` : '应有现金·无差异' }}
                 </div>
               </div>
             </div>

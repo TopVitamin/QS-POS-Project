@@ -19,14 +19,14 @@ const storeIds = computed(() => (storeId.value ? [storeId.value] : admin.storeId
 const { data, loading } = useRequest(() => api.storeops.rtws({ storeIds: storeIds.value }), { watch: [storeIds] })
 
 const columns: DataTableColumns<ReturnToWarehouse> = [
-  { title: '退仓单号', key: 'no', width: 250, render: (r) => two(bill(r.no), admin.storeText(r.storeId)) },
+  { title: '退仓单号', key: 'no', width: 250, fixed: 'left', render: (r) => two(bill(r.no), admin.storeText(r.storeId)) },
   { title: '提交', key: 'createdAt', width: 170, render: (r) => two(dateTime(r.createdAt), admin.who(r.creatorJobNo)) },
   { title: '原因', key: 'reason', width: 96 },
   { title: '商品', key: 'lines', minWidth: 220, ellipsis: { tooltip: true }, render: (r) => two(r.lines.map((l) => `${l.name}×${l.qty}`).join('、'), `${r.lines.reduce((s, l) => s + l.qty, 0)}件`) },
   { title: '中枢同意', key: 'approvedAt', width: 170, render: (r) => dateTime(r.hub.approvedAt) },
   { title: '退往', key: 'target', width: 100, render: (r) => r.hub.targetNodeName ?? muted('-') },
   { title: '交运', key: 'shippedAt', width: 170, render: (r) => dateTime(r.hub.shippedAt) },
-  { title: '状态', key: 'status', width: 110, render: (r) => status(RTW_STATUS[r.status]) },
+  { title: '状态', key: 'status', width: 110, fixed: 'right', render: (r) => status(RTW_STATUS[r.status]) },
 ]
 
 const open = ref<string>('')

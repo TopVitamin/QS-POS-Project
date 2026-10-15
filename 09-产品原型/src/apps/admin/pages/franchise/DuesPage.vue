@@ -39,10 +39,11 @@ const totals = computed(() => {
 })
 
 const columns: DataTableColumns<FranchiseDue> = [
-  { title: '应缴单号', key: 'no', width: 240, render: (d) => two(bill(d.no), admin.franchiseeText(d.franchiseeId)) },
+  { title: '应缴单号', key: 'no', width: 240, fixed: 'left', render: (d) => two(bill(d.no), admin.franchiseeText(d.franchiseeId)) },
   { title: '门店', key: 'storeId', width: 160, render: (d) => admin.storeText(d.storeId) },
   { title: '营业日', key: 'bizDate', width: 130, render: (d) => h('span', { class: 'qs-num' }, `${d.bizDate} ${weekdayOf(d.bizDate)}`) },
   { title: '日结单', key: 'dailyCloseNo', width: 210, render: (d) => bill(d.dailyCloseNo, true) },
+  { title: '应缴合计', key: 'total', width: 120, align: 'right', render: (d) => money(d.total, { strong: true }) },
   ...PAY_METHODS.map((m) => ({
     title: PAY_METHOD[m].short,
     key: m,
@@ -50,10 +51,9 @@ const columns: DataTableColumns<FranchiseDue> = [
     align: 'right' as const,
     render: (d: FranchiseDue) => money(d.byMethod[m], { tone: d.byMethod[m] ? 'default' : 'muted' }),
   })),
-  { title: '应缴合计', key: 'total', width: 120, align: 'right', render: (d) => money(d.total, { strong: true }) },
   { title: '生成时间', key: 'generatedAt', width: 170, render: (d) => dateTime(d.generatedAt) },
-  { title: '状态', key: 'status', width: 120, render: (d) => status(DUE_STATUS[d.status]) },
-  { title: '缴款', key: 'remittanceNo', width: 110, render: (d) => (d.remittanceNo ? h('span', { class: 'text-t2' }, '已登记') : muted('-')) },
+  { title: '状态', key: 'status', width: 120, fixed: 'right', render: (d) => status(DUE_STATUS[d.status]) },
+  { title: '缴款', key: 'remittanceNo', width: 110, fixed: 'right', render: (d) => (d.remittanceNo ? h('span', { class: 'text-t2' }, '已登记') : muted('-')) },
 ]
 const statusOptions = Object.entries(DUE_STATUS).map(([value, d]) => ({ label: d.label, value }))
 const franchiseeOptions = computed(() => admin.scopedFranchisees.map((f) => ({ label: codeName(f.code, f.name), value: f.id })))

@@ -64,8 +64,8 @@ function objectCell(l: AuditLog) {
 }
 
 const columns: DataTableColumns<AuditLog> = [
-  { title: '时间', key: 'at', width: 170, render: (l) => dateTime(l.at) },
-  { title: '动作', key: 'action', width: 120, render: (l) => h(NTag, { size: 'small', bordered: false, type: AUDIT_ACTION[l.action].tone }, () => l.action) },
+  { title: '时间', key: 'at', width: 170, fixed: 'left', render: (l) => dateTime(l.at) },
+  { title: '动作', key: 'action', width: 120, fixed: 'left', render: (l) => h(NTag, { size: 'small', bordered: false, type: AUDIT_ACTION[l.action].tone }, () => l.action) },
   { title: '门店', key: 'storeId', width: 170, render: (l) => (l.storeId ? admin.storeText(l.storeId) : muted('不挂门店')) },
   { title: '操作者', key: 'operator', width: 120, render: (l) => admin.who(l.operatorJobNo) },
   { title: '授权人', key: 'authorizer', width: 120, render: (l) => (l.authorizerJobNo ? admin.who(l.authorizerJobNo) : muted('-')) },

@@ -39,23 +39,23 @@ const lineColumns: DataTableColumns<SaleLine> = [
   {
     title: '商品（成交快照）',
     key: 'name',
-    minWidth: 220,
+    minWidth: 200,
     render: (l) =>
       two(
         h('span', { class: 'font-500' }, `${l.name}　${l.spec}`),
         h('span', null, [h('span', { class: 'font-mono' }, l.sku), `　条码 ${l.barcode}${l.sns.length ? `　SN ${l.sns.join(' ')}` : ''}`]),
       ),
   },
-  { title: '数量', key: 'qty', width: 60, align: 'right', render: (l) => num(l.qty) },
-  { title: '零售价', key: 'unitPrice', width: 120, align: 'right', render: (l) => money(l.unitPrice, { unit: true }) },
-  { title: '原价金额', key: 'listAmount', width: 110, align: 'right', render: (l) => money(l.listAmount) },
-  { title: '促销', key: 'promo', width: 96, align: 'right', render: (l) => money(l.promoDiscount, { discount: true }) },
-  { title: '整单分摊', key: 'order', width: 96, align: 'right', render: (l) => money(l.orderDiscount, { discount: true }) },
-  { title: '用券', key: 'coupon', width: 90, align: 'right', render: (l) => money(l.couponDiscount, { discount: true }) },
-  { title: '改价', key: 'manual', width: 90, align: 'right', render: (l) => money(l.manualDiscount, { discount: true }) },
-  { title: '实付', key: 'payable', width: 110, align: 'right', render: (l) => money(l.payable, { strong: true }) },
-  { title: '导购', key: 'guide', width: 110, render: (l) => admin.who(l.guideJobNo) },
-  { title: '已退', key: 'returned', width: 100, align: 'right', render: (l) => (l.returnedQty ? two(`${l.returnedQty}件`, formatMoney(l.refundedAmount)) : muted('-')) },
+  { title: '数量', key: 'qty', width: 56, align: 'right', render: (l) => num(l.qty) },
+  { title: '零售价', key: 'unitPrice', width: 104, align: 'right', render: (l) => money(l.unitPrice, { unit: true }) },
+  { title: '原价金额', key: 'listAmount', width: 96, align: 'right', render: (l) => money(l.listAmount) },
+  { title: '促销', key: 'promo', width: 84, align: 'right', render: (l) => money(l.promoDiscount, { discount: true }) },
+  { title: '整单分摊', key: 'order', width: 84, align: 'right', render: (l) => money(l.orderDiscount, { discount: true }) },
+  { title: '用券', key: 'coupon', width: 76, align: 'right', render: (l) => money(l.couponDiscount, { discount: true }) },
+  { title: '改价', key: 'manual', width: 76, align: 'right', render: (l) => money(l.manualDiscount, { discount: true }) },
+  { title: '实付', key: 'payable', width: 96, align: 'right', render: (l) => money(l.payable, { strong: true }) },
+  { title: '导购', key: 'guide', width: 104, render: (l) => admin.who(l.guideJobNo) },
+  { title: '已退', key: 'returned', width: 84, align: 'right', render: (l) => (l.returnedQty ? two(`${l.returnedQty}件`, formatMoney(l.refundedAmount)) : muted('-')) },
 ]
 
 const paymentColumns: DataTableColumns<Payment> = [
@@ -141,21 +141,21 @@ async function resubmit() {
         </div>
       </div>
 
+      <n-card title="商品明细" size="small" class="mb-4">
+        <template #header-extra><span class="text-12px text-t3">价格、促销、导购都是成交时的快照；单价4位小数（《6.编码规则》）</span></template>
+        <n-data-table :columns="lineColumns" :data="sale.lines" :row-key="(l: SaleLine) => l.lineNo" :scroll-x="1108" :bordered="false" size="small" />
+        <div class="mt-3 flex flex-wrap justify-end gap-x-6 gap-y-1 text-13px text-t2">
+          <span>原价合计 <MoneyText :value="sale.totals.list" /></span>
+          <span>促销 <MoneyText :value="sale.totals.promo" discount /></span>
+          <span>整单 <MoneyText :value="sale.totals.order" discount /></span>
+          <span>用券 <MoneyText :value="sale.totals.coupon" discount /></span>
+          <span>改价 <MoneyText :value="sale.totals.manual" discount /></span>
+          <span class="font-600 text-t1">实收 <MoneyText :value="sale.totals.payable" strong /></span>
+        </div>
+      </n-card>
+
       <div class="grid grid-cols-[minmax(0,1fr)_400px] items-start gap-4">
         <div class="flex min-w-0 flex-col gap-4">
-          <n-card title="商品明细" size="small">
-            <template #header-extra><span class="text-12px text-t3">价格、促销、导购都是成交时的快照；零售价4位小数</span></template>
-            <n-data-table :columns="lineColumns" :data="sale.lines" :row-key="(l: SaleLine) => l.lineNo" :scroll-x="1250" :bordered="false" size="small" />
-            <div class="mt-3 flex flex-wrap justify-end gap-x-6 gap-y-1 text-13px text-t2">
-              <span>原价合计 <MoneyText :value="sale.totals.list" /></span>
-              <span>促销 <MoneyText :value="sale.totals.promo" discount /></span>
-              <span>整单 <MoneyText :value="sale.totals.order" discount /></span>
-              <span>用券 <MoneyText :value="sale.totals.coupon" discount /></span>
-              <span>改价 <MoneyText :value="sale.totals.manual" discount /></span>
-              <span class="font-600 text-t1">实收 <MoneyText :value="sale.totals.payable" strong /></span>
-            </div>
-          </n-card>
-
           <div class="grid grid-cols-2 gap-4">
             <n-card title="促销快照" size="small">
               <template #header-extra><AssumptionTag k="promoStacking" /></template>
@@ -224,7 +224,7 @@ async function resubmit() {
               <span class="text-t3">日结</span><span class="text-right"><BillNo v-if="sale.dailyCloseNo" :no="sale.dailyCloseNo" plain /><span v-else class="text-warn">未封账</span></span>
             </div>
             <Hint tone="info" class="mt-3">
-              「断网卖掉的不是第二笔」不做离线，只用重复回传演示去重：同一来源单号再送一次，中枢返回原结果单号，不再扣减。
+              《10.阶段规划与一期交付标准》§2.4「断网卖掉的，联网后不是第二笔」。原型不做离线，只用重复回传演示去重：同一来源单号再送一次，中枢返回原结果单号，不再扣减。
             </Hint>
             <n-button type="primary" secondary block class="mt-3" :loading="busy" @click="resubmit">
               <template #icon><span class="i-ph-arrows-clockwise-bold" /></template>模拟重复回传

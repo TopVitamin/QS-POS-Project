@@ -33,7 +33,7 @@ const diffCell = (s: Shift) => {
 }
 
 const columns: DataTableColumns<Shift> = [
-  { title: '班次号', key: 'no', width: 230, render: (s) => two(bill(s.no), admin.storeText(s.storeId)) },
+  { title: '班次号', key: 'no', width: 230, fixed: 'left', render: (s) => two(bill(s.no), admin.storeText(s.storeId)) },
   { title: '收银台', key: 'registerNo', width: 80, render: (s) => `${s.registerNo}号` },
   { title: '收银员', key: 'cashier', width: 110, render: (s) => admin.who(s.cashierJobNo) },
   { title: '营业日', key: 'bizDate', width: 110, render: (s) => h('span', { class: 'qs-num' }, s.bizDate) },
@@ -44,7 +44,7 @@ const columns: DataTableColumns<Shift> = [
   { title: '实点现金', key: 'countedCash', width: 110, align: 'right', render: (s) => (s.status === 'closed' ? money(s.countedCash, { strong: true }) : muted('-')) },
   { title: '现金差异', key: 'cashDiff', width: 110, align: 'right', render: diffCell },
   { title: '差异说明', key: 'diffNote', minWidth: 160, ellipsis: { tooltip: true }, render: (s) => s.diffNote ?? '' },
-  { title: '状态', key: 'status', width: 90, render: (s) => status(SHIFT_STATUS[s.status]) },
+  { title: '状态', key: 'status', width: 90, fixed: 'right', render: (s) => status(SHIFT_STATUS[s.status]) },
 ]
 const statusOptions = Object.entries(SHIFT_STATUS).map(([value, d]) => ({ label: d.label, value }))
 const stats = computed(() => {
