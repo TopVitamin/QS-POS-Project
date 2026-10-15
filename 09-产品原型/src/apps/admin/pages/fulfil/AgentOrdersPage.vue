@@ -5,6 +5,7 @@ import { api } from '@/shared/api'
 import MoneyText from '@/shared/components/MoneyText.vue'
 import { useRequest } from '@/shared/composables/useRequest'
 import { AGENT_STATUS } from '@/shared/config/labels'
+import { listsCustomer } from '@/shared/config/permissions'
 import AssumptionTag from '@/shared/naive/AssumptionTag.vue'
 import BillNo from '@/shared/naive/BillNo.vue'
 import PendingTag from '@/shared/naive/PendingTag.vue'
@@ -40,11 +41,19 @@ const columns: DataTableColumns<AgentOrder> = [
   { title: '导购（业绩归属）', key: 'guide', width: 140, render: (o) => admin.who(o.guideJobNo) },
   { title: '商品', key: 'items', minWidth: 190, ellipsis: { tooltip: true }, render: (o) => o.items.map((i) => `${i.name}×${i.qty}`).join('、') },
   { title: '参考金额', key: 'referenceAmount', width: 110, align: 'right', render: (o) => money(o.referenceAmount) },
-  { title: '收货人', key: 'customer', width: 130, render: (o) => two(maskName(o.customer.name), h('span', { class: 'qs-num' }, maskPhone(o.customer.phone))) },
+  {
+    title: '收货人',
+    key: 'customer',
+    width: 130,
+    render: (o) => (listsCustomer(admin.storeById(o.storeId)) ? two(maskName(o.customer.name), h('span', { class: 'qs-num' }, maskPhone(o.customer.phone))) : muted('加盟店不展示')),
+  },
   { title: 'OMS路由', key: 'oms', width: 230, render: (o) => (o.oms.omsNo ? two(bill(o.oms.omsNo), orEmpty(o.oms.nodeName)) : muted('-')) },
   { title: '运单', key: 'tracking', width: 170, render: (o) => (o.oms.trackingNo ? two(mono(o.oms.trackingNo), o.oms.carrier) : muted('-')) },
   { title: '状态', key: 'status', width: 100, render: (o) => status(AGENT_STATUS[o.status]) },
 ]
+
+/** 范围里只有加盟店时整列不出 */
+const shownColumns = computed(() => (admin.scopedStores.some((s) => listsCustomer(s)) ? columns : columns.filter((c) => !('key' in c) || c.key !== 'customer')))
 
 const statusOptions = Object.entries(AGENT_STATUS).map(([value, d]) => ({ label: d.label, value }))
 
@@ -89,12 +98,12 @@ const stepNow = computed(() => {
 
     <Hint class="mb-4">
       收款时点 <AssumptionTag k="agentPayment" />；承运商 <AssumptionTag k="carrier" />；导购工号是业绩归属的主键，提成怎么算 <PendingTag id="待确认-13" />；
-      加盟店发起的代客单，佣金 <PendingTag id="待确认-20" />
+      加盟店发起的代客单，佣金 <PendingTag id="待确认-20" />；列表里的收货人直营店脱敏展示、加盟店不展示 <PendingTag id="待确认-52" />
     </Hint>
 
     <div class="qs-card overflow-hidden">
       <n-data-table
-        :columns="columns"
+        :columns="shownColumns"
         :data="data ?? []"
         :loading="loading && !data"
         :pagination="pagination"

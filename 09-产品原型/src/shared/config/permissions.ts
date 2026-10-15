@@ -185,6 +185,14 @@ export function scopeFranchiseeIds(user: Who | null | undefined, franchisees: Fr
   return franchisees.filter((f) => ids.has(f.id)).map((f) => f.id)
 }
 
+/**
+ * 履约列表（自提单、代客单）展不展示顾客字段。核销只核验门店、有效期和是否已核销，用不到顾客信息；
+ * 加盟店列表里的手机号能不能脱敏后展示见【待确认-52】，定之前不展示（《8.角色权限原则》§二）
+ */
+export function listsCustomer(store: Pick<Store, 'mode'> | null | undefined): boolean {
+  return store?.mode === 'direct'
+}
+
 /** 授权人：有授权职责，且门店在其数据范围内 */
 export function canAuthorizeFor(user: Who | null | undefined, storeId: string, stores: Store[]): boolean {
   return can(user, 'authorize') && scopeStoreIds(user, stores).includes(storeId)

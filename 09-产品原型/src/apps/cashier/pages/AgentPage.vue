@@ -4,13 +4,14 @@ import { api } from '@/shared/api'
 import MoneyText from '@/shared/components/MoneyText.vue'
 import { useRequest } from '@/shared/composables/useRequest'
 import { AGENT_STATUS } from '@/shared/config/labels'
+import { listsCustomer } from '@/shared/config/permissions'
 import AssumptionTag from '@/shared/naive/AssumptionTag.vue'
 import BillNo from '@/shared/naive/BillNo.vue'
 import PendingTag from '@/shared/naive/PendingTag.vue'
 import StatusTag from '@/shared/naive/StatusTag.vue'
 import { useFeedback } from '@/shared/naive/feedback'
 import type { AgentOrder, Store } from '@/shared/types'
-import { maskName, maskPhone } from '@/shared/utils/format'
+import { maskCode, maskName, maskPhone } from '@/shared/utils/format'
 import { timeOf, todayBizDate } from '@/shared/utils/time'
 import { useCart } from '../stores/cart'
 import { useSession } from '../stores/session'
@@ -197,9 +198,9 @@ const SOURCE: Record<AgentOrder['source'], string> = { cashier: '收银端', mob
           </div>
           <div class="mt-1.5 text-14px font-600">{{ o.items.map((i) => `${i.name}×${i.qty}`).join('、') }}</div>
           <div class="mt-0.5 text-12px text-t3">
-            {{ o.createdAt.slice(5, 16) }} · {{ SOURCE[o.source] }}<template v-if="o.sourceRef">（{{ o.sourceRef }}）</template> · 导购 {{ o.guideJobNo }} {{ nameOf(o.guideJobNo) }}
+            {{ o.createdAt.slice(5, 16) }} · {{ SOURCE[o.source] }}<template v-if="o.sourceRef">（{{ maskCode(o.sourceRef) }}）</template> · 导购 {{ o.guideJobNo }} {{ nameOf(o.guideJobNo) }}
           </div>
-          <div class="mt-0.5 text-12px text-t3">收货人 {{ maskName(o.customer.name) }} {{ maskPhone(o.customer.phone) }}</div>
+          <div v-if="listsCustomer(store)" class="mt-0.5 text-12px text-t3">收货人 {{ maskName(o.customer.name) }} {{ maskPhone(o.customer.phone) }}</div>
           <div class="mt-2.5 grid grid-cols-4">
             <div v-for="(s, i) in steps" :key="s.key" class="relative flex flex-col items-center gap-1">
               <span v-if="i > 0" class="absolute right-1/2 top-4px h-2px w-full" :class="stepIndex(o.status) >= i ? 'bg-brand-500' : 'bg-line'" />

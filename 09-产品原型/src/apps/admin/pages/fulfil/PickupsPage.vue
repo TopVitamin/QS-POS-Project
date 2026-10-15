@@ -4,6 +4,7 @@ import { NTag, type DataTableColumns } from 'naive-ui'
 import { api } from '@/shared/api'
 import { useRequest } from '@/shared/composables/useRequest'
 import { PICKUP_STATUS, VERIFY_REJECT } from '@/shared/config/labels'
+import { listsCustomer } from '@/shared/config/permissions'
 import AssumptionTag from '@/shared/naive/AssumptionTag.vue'
 import PendingTag from '@/shared/naive/PendingTag.vue'
 import type { PickupOrder, VerificationRecord } from '@/shared/types'
@@ -54,7 +55,12 @@ const orderColumns: DataTableColumns<PickupOrder> = [
   { title: '自提门店', key: 'storeId', width: 160, render: (o) => admin.storeText(o.storeId) },
   { title: '商品', key: 'items', minWidth: 190, ellipsis: { tooltip: true }, render: (o) => o.items.map((i) => `${i.name}×${i.qty}`).join('、') },
   { title: '线上已付', key: 'paidAmount', width: 110, align: 'right', render: (o) => money(o.paidAmount) },
-  { title: '顾客', key: 'customer', width: 130, render: (o) => two(maskName(o.customer.name), h('span', { class: 'qs-num' }, maskPhone(o.customer.phone))) },
+  {
+    title: '顾客',
+    key: 'customer',
+    width: 130,
+    render: (o) => (listsCustomer(admin.storeById(o.storeId)) ? two(maskName(o.customer.name), h('span', { class: 'qs-num' }, maskPhone(o.customer.phone))) : muted('加盟店不展示')),
+  },
   { title: '提货码', key: 'pickupCode', width: 90, render: (o) => mono(codeText(o.pickupCode, o.omsNo)) },
   {
     title: '锁定',
@@ -76,6 +82,11 @@ const orderColumns: DataTableColumns<PickupOrder> = [
   },
   { title: '', key: 'trace', width: 60, render: (o) => trace(o.omsNo) },
 ]
+
+/** 范围里只有加盟店时整列不出 */
+const shownOrderColumns = computed(() =>
+  admin.scopedStores.some((s) => listsCustomer(s)) ? orderColumns : orderColumns.filter((c) => !('key' in c) || c.key !== 'customer'),
+)
 
 const recordColumns: DataTableColumns<VerificationRecord> = [
   { title: '时间', key: 'at', width: 170, render: (r) => dateTime(r.at) },
@@ -125,7 +136,7 @@ const resultOptions = [
     <Hint class="mb-4">
       先锁后出码，锁定成功才有提货码；中枢核验门店、锁定、是否过期和是否已核销，成功和被拒都留记录（《4.全局业务规则》§二、§七）。
       提货截止 <AssumptionTag k="pickupDeadline" />；无码核销 <PendingTag id="待确认-05" />；核销是否另生零金额销售单 <PendingTag id="待确认-14" />；
-      列表里的顾客信息脱敏 <PendingTag id="待确认-52" />；加盟店核销计件，佣金 <PendingTag id="待确认-20" />
+      列表里的顾客信息直营店脱敏展示、加盟店不展示 <PendingTag id="待确认-52" />；加盟店核销计件，佣金 <PendingTag id="待确认-20" />
     </Hint>
 
     <div class="qs-card overflow-hidden">
@@ -138,7 +149,7 @@ const resultOptions = [
         </template>
         <n-tab-pane name="orders" :tab="`履约单 ${shownOrders.length}`">
           <n-data-table
-            :columns="orderColumns"
+            :columns="shownOrderColumns"
             :data="shownOrders"
             :loading="loading && !orders"
             :pagination="pagination"

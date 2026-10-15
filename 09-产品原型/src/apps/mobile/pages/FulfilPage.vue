@@ -5,6 +5,7 @@ import { api } from '@/shared/api'
 import MoneyText from '@/shared/components/MoneyText.vue'
 import { useRequest } from '@/shared/composables/useRequest'
 import { AGENT_STATUS, PICKUP_STATUS } from '@/shared/config/labels'
+import { listsCustomer } from '@/shared/config/permissions'
 import { brand } from '@/shared/theme/tokens'
 import type { AgentOrder, PickupOrder } from '@/shared/types'
 import { maskAddress, maskCode, maskName, maskPhone } from '@/shared/utils/format'
@@ -18,6 +19,7 @@ import { useMobile } from '../stores/session'
 
 const mobile = useMobile()
 const route = useRoute()
+const showCustomer = computed(() => listsCustomer(mobile.store))
 const tab = ref(route.query.tab === 'agent' ? 'agent' : 'pickup')
 
 const { data: pickups } = useRequest(() => api.fulfil.pickups({ storeIds: [mobile.storeId] }))
@@ -69,15 +71,17 @@ const SOURCE: Record<AgentOrder['source'], string> = { cashier: '收银端', mob
           </div>
           <div class="mt-1.5 text-14px">{{ p.items.map((i) => `${i.name}×${i.qty}`).join('、') }}</div>
           <div class="mt-1 flex items-center gap-1 text-12px text-t3">
-            <span>{{ maskName(p.customer.name) }} {{ maskPhone(p.customer.phone) }}</span>
-            <span>·</span>
+            <template v-if="showCustomer">
+              <span>{{ maskName(p.customer.name) }} {{ maskPhone(p.customer.phone) }}</span>
+              <span>·</span>
+            </template>
             <span>{{ shortDate(p.createdAt) }} {{ timeOf(p.createdAt) }} 下单</span>
           </div>
           <div class="mt-1 text-12px text-t3"><MBillNo :no="p.omsNo" plain /><template v-if="p.verifiedAt"> · {{ mobile.nameOf(p.verifierJobNo) }} {{ timeOf(p.verifiedAt) }}核销</template></div>
         </div>
         <van-empty v-if="!pickupRows.length" image-size="80" :description="`没有${PICKUP_STATUS[pickupFilter].label}的自提单`" />
         <Note>
-          自提单是OMS下发到本店的履约单，线上已付款，门店不再收钱。待核销的提货码只露前3位，完整的码在顾客手机上。手机号脱敏 <MPendingTag id="待确认-52" />，提货截止 <MAssumptionTag k="pickupDeadline" />
+          自提单是OMS下发到本店的履约单，线上已付款，门店不再收钱。待核销的提货码只露前3位，完整的码在顾客手机上。{{ showCustomer ? '列表里的顾客信息脱敏' : '加盟店列表不展示顾客信息，核销时再看' }} <MPendingTag id="待确认-52" />，提货截止 <MAssumptionTag k="pickupDeadline" />
         </Note>
       </van-tab>
 
@@ -103,7 +107,7 @@ const SOURCE: Record<AgentOrder['source'], string> = { cashier: '收银端', mob
             <MStatusTag :def="AGENT_STATUS[o.status]" />
           </div>
           <div class="mt-1.5 text-14px">{{ o.items.map((i) => `${i.name}×${i.qty}`).join('、') }}</div>
-          <div class="mt-1 text-12px text-t3">
+          <div v-if="showCustomer" class="mt-1 text-12px text-t3">
             {{ maskName(o.customer.name) }} {{ maskPhone(o.customer.phone) }} · {{ maskAddress(o.customer.address) }}
           </div>
           <van-steps v-if="o.status !== 'cancelled'" :active="stepOf(o.status)" :active-color="brand[600]" class="!mt-1 !px-0 !pb-0">
@@ -119,7 +123,7 @@ const SOURCE: Record<AgentOrder['source'], string> = { cashier: '收银端', mob
         </div>
         <van-empty v-if="!agentRows.length" image-size="80" description="没有代客单" />
         <Note>
-          代客单是申请，不是发货指令：发货节点和承运商都由OMS给出，区域仓发货不扣本店库存。业绩记在发起门店和导购工号上；不在POS收款 <MPendingTag id="待确认-06" />，承运商 <MAssumptionTag k="carrier" />
+          代客单是申请，不是发货指令：发货节点和承运商都由OMS给出，区域仓发货不扣本店库存。业绩记在发起门店和导购工号上；不在POS收款 <MPendingTag id="待确认-06" />，承运商 <MAssumptionTag k="carrier" /><template v-if="!showCustomer">；加盟店列表不展示收货人 <MPendingTag id="待确认-52" /></template>
         </Note>
       </van-tab>
     </van-tabs>
