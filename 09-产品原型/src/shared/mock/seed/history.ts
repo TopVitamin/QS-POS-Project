@@ -415,7 +415,7 @@ function generate(
     }
   }
 
-  // 今天：万象天地店1号收银台李雨桐当班，科技园店、松山湖店也已开班，千灯湖店还没开班
+  // 今天：万象天地店01号收银台李雨桐当班，科技园店、松山湖店也已开班，千灯湖店还没开班
   if (hasToday) {
     const open = Math.min(595, nowMin - 45)
     for (const store of db.stores) {

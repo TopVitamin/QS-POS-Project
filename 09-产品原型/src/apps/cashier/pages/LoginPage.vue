@@ -257,7 +257,7 @@ const dutyText = (u: SessionUser) => u.duties.map((d) => DUTY[d].label).join('·
                 <span class="block text-16px font-600">{{ a.name }} <span class="qs-num text-13px font-500 text-t3">{{ a.jobNo }}</span></span>
                 <span class="mt-0.5 block text-12px text-t2">{{ dutyText(a) }}</span>
                 <span v-if="shiftOfPerson(a.jobNo)" class="mt-0.5 block text-12px text-warn">{{ shiftOfPerson(a.jobNo)!.registerNo }}号收银台当班中</span>
-                <span v-else-if="!can(a, 'payment.collect')" class="mt-0.5 block text-12px text-t3">只开单、挂单，不开班</span>
+                <span v-else-if="!can(a, 'payment.collect')" class="mt-0.5 block text-12px text-t3">只开单，不开班</span>
               </span>
             </button>
           </div>

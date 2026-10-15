@@ -81,6 +81,7 @@ const keyCls = computed(() =>
         v-else-if="confirmText"
         type="button"
         class="pos-press row-span-2 rounded-14px bg-brand-600 px-1 text-20px font-700 leading-snug text-white shadow-card hover:bg-brand-500 disabled:cursor-not-allowed disabled:bg-[#A7B3B1]"
+        :aria-label="confirmText"
         :disabled="confirmDisabled"
         @click="emit('confirm')"
       >
