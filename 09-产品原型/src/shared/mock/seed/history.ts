@@ -240,9 +240,10 @@ function generate(
       const members = db.members.filter((m) => m.storeId === storeId)
       const member = members.length && rng.chance(0.3) ? rng.pick(members) : undefined
       const promotions = activePromotions(db.promotions, storeId, when)
-      const unused = member?.coupons.find((c) => c.status === 'unused')
+      // 每位会员至少留一张未用券，当天收银还能演示用券
+      const unused = member?.coupons.filter((c) => c.status === 'unused') ?? []
       let coupon: PricingCoupon | undefined =
-        unused && rng.chance(0.6) ? { couponId: unused.id, template: db.couponTemplates.find((t) => t.id === unused.templateId)! } : undefined
+        unused.length > 1 && rng.chance(0.6) ? { couponId: unused[0].id, template: db.couponTemplates.find((t) => t.id === unused[0].templateId)! } : undefined
       let priced = priceCart({ lines, promotions, coupon })
       if (coupon && !priced.coupon?.applied) {
         coupon = undefined

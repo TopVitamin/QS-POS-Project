@@ -88,4 +88,10 @@ describe.each(MOMENTS)('种子数据 @ %s', (moment) => {
     expect(code('370615').lock.status).toBe('released')
     expect(availableOf(stock('s01', 'SP0401010001'))).toBe(0)
   })
+
+  it('发过券的会员都还留着至少一张未用券', () => {
+    const issued = db.members.filter((m) => m.coupons.length)
+    expect(issued.length).toBeGreaterThan(0)
+    for (const m of issued) expect(m.coupons.some((c) => c.status === 'unused')).toBe(true)
+  })
 })
