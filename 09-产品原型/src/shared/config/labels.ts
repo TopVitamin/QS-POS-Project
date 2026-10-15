@@ -1,4 +1,4 @@
-import type { Duty, LedgerType, PayMethod, StoreMode, VerifyRejectReason } from '../types'
+import type { AuditAction, Duty, LedgerType, PayMethod, PromotionType, StoreMode, VerifyRejectReason } from '../types'
 
 /**
  * 状态和枚举的中文文案。都是原型演示枚举，正式取值以后续字段清单为准。
@@ -24,6 +24,13 @@ export const PAY_METHOD: Record<PayMethod, { label: string; short: string; icon:
 }
 
 export const PAY_METHODS: PayMethod[] = ['cash', 'wechat', 'alipay', 'unionpay']
+
+export const PROMO_TYPE: Record<PromotionType | 'coupon', string> = {
+  special_price: '单品特价',
+  nth_discount: '第N件折扣',
+  threshold_reduction: '整单满减',
+  coupon: '会员券',
+}
 
 export const PAYMENT_STATUS: Record<'success' | 'pending' | 'failed', LabelDef> = {
   success: { label: '成功', tone: 'success' },
@@ -77,6 +84,11 @@ export const SHIPMENT_STATUS: Record<'in_transit' | 'received', LabelDef> = {
   received: { label: '已收货', tone: 'success' },
 }
 
+export const DISCREPANCY_STATUS: Record<'submitted' | 'handled', LabelDef> = {
+  submitted: { label: '待中枢处理', tone: 'warning' },
+  handled: { label: '中枢已处理', tone: 'success' },
+}
+
 export const STOCKTAKE_STATUS: Record<'counting' | 'submitted' | 'adjusted', LabelDef> = {
   counting: { label: '盘点中', tone: 'info' },
   submitted: { label: '差异待授权', tone: 'warning' },
@@ -128,6 +140,24 @@ export const DUTY: Record<Duty, { label: string; desc: string }> = {
   franchiseAdmin: { label: '加盟商管理', desc: '本加盟商的店、代销仓、应缴和结算' },
   franchiseFinance: { label: '加盟商财务', desc: '本加盟商的应缴、缴款和结算' },
   sysAdmin: { label: '系统管理', desc: '开通账号、分配数据范围' },
+}
+
+/** 操作日志的动作。required 为《4.全局业务规则》§七点名必须留痕的，其余是原型补记的 */
+export const AUDIT_ACTION: Record<AuditAction, { tone: Tone; required: boolean }> = {
+  改价: { tone: 'warning', required: true },
+  退货: { tone: 'warning', required: true },
+  核销成功: { tone: 'success', required: true },
+  核销拒绝: { tone: 'error', required: true },
+  代客下单: { tone: 'info', required: true },
+  收货差异: { tone: 'error', required: true },
+  盘点审核: { tone: 'primary', required: true },
+  交班差异: { tone: 'error', required: true },
+  加盟缴款登记: { tone: 'primary', required: true },
+  日结封账: { tone: 'success', required: false },
+  结算异议: { tone: 'warning', required: false },
+  支付查单: { tone: 'info', required: false },
+  撤销收款: { tone: 'warning', required: false },
+  重复回传: { tone: 'default', required: false },
 }
 
 export const RETURN_REASONS = ['质量问题', '不想要了', '买错型号', '换货', '其他']

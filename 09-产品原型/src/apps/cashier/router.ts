@@ -1,14 +1,5 @@
 import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router'
-import type { Perm } from '@/shared/config/permissions'
 import { useSession } from './stores/session'
-
-declare module 'vue-router' {
-  interface RouteMeta {
-    /** 有其中任一权限就能进 */
-    perms?: Perm[]
-    nav?: { label: string; icon: string }
-  }
-}
 
 export const workRoutes: RouteRecordRaw[] = [
   { path: 'sale', name: 'sale', component: () => import('./pages/SalePage.vue'), meta: { perms: ['sale.open', 'payment.collect'], nav: { label: '收银', icon: 'i-ph-shopping-cart-simple-fill' } } },
