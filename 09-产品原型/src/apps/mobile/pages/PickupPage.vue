@@ -129,11 +129,11 @@ function toAgent() {
         <MStatusTag :def="PICKUP_STATUS[passed.status]" />
       </div>
       <van-cell-group :border="false">
-        <van-cell title="OMS履约单"><template #value><MBillNo :no="passed.omsNo" /></template></van-cell>
-        <van-cell title="顾客">
+        <van-cell title="OMS履约单" title-class="!flex-none w-88px"><template #value><MBillNo :no="passed.omsNo" /></template></van-cell>
+        <van-cell title="顾客" title-class="!flex-none w-88px">
           <template #value>{{ maskName(passed.customer.name) }} {{ maskPhone(passed.customer.phone) }} <MPendingTag id="待确认-52" /></template>
         </van-cell>
-        <van-cell title="线上已付"><template #value><MoneyText :value="passed.paidAmount" strong /> <span class="text-12px text-t3">门店不再收钱</span></template></van-cell>
+        <van-cell title="线上已付" title-class="!flex-none w-88px"><template #value><MoneyText :value="passed.paidAmount" strong /> <span class="text-12px text-t3">门店不再收钱</span></template></van-cell>
       </van-cell-group>
       <div class="mx-4 mb-3 overflow-hidden rounded-12px border border-line">
         <div class="bg-subtle px-3 py-1.5 text-12px text-t2">商品以中枢下发为准，POS不改</div>
@@ -190,8 +190,8 @@ function toAgent() {
         <div class="mt-1 text-13px text-t2">{{ done.order.items.map((i) => `${i.name}×${i.qty}`).join('、') }}</div>
       </div>
       <van-cell-group :border="false">
-        <van-cell title="核销单号"><template #value><MBillNo :no="done.record.no" /></template></van-cell>
-        <van-cell title="中枢结果单号"><template #value><MBillNo :no="done.order.hubResultNo" /></template></van-cell>
+        <van-cell title="核销单号" title-class="!flex-none w-96px"><template #value><MBillNo :no="done.record.no" /></template></van-cell>
+        <van-cell title="中枢结果单号" title-class="!flex-none w-96px"><template #value><MBillNo :no="done.order.hubResultNo" /></template></van-cell>
       </van-cell-group>
       <div class="px-4 pb-2 text-12px leading-19px text-t3">
         核销记录已回传，中枢扣减{{ store.warehouse.name }}并释放锁定。核销不收钱，不计入成交净额；是否另生零金额销售单 <MPendingTag id="待确认-14" />

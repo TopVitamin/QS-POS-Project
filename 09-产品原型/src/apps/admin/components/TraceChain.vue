@@ -44,7 +44,7 @@ const layerIcon: Record<TraceNode['layer'], string> = {
         <div v-if="n.fields.length" class="mt-2 grid gap-x-6 gap-y-1 text-13px" :class="dense ? 'grid-cols-1' : 'grid-cols-2'">
           <div v-for="f in n.fields" :key="f.label + f.value" class="flex min-w-0 gap-2">
             <span class="shrink-0 text-t3">{{ f.label }}</span>
-            <span class="min-w-0 break-all" :class="f.mono ? 'font-mono text-12px leading-20px' : ''">{{ f.value }}</span>
+            <span class="min-w-0" :class="f.mono ? 'break-all font-mono text-12px leading-20px' : 'break-words'">{{ f.value }}</span>
           </div>
         </div>
         <div v-if="n.note" class="mt-2 flex flex-wrap items-center gap-1 text-12px leading-18px text-t3">

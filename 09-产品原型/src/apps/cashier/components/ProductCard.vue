@@ -24,7 +24,7 @@ const availCls = computed(() => {
 <template>
   <button
     type="button"
-    class="pos-press relative flex h-146px flex-col rounded-16px border border-line bg-white p-3 text-left shadow-card enabled:hover:border-brand-300 disabled:opacity-55"
+    class="pos-press relative flex min-h-146px flex-col rounded-16px border border-line bg-white p-3 text-left shadow-card enabled:hover:border-brand-300 disabled:opacity-55"
     :disabled="disabled"
     @click="emit('add')"
   >
