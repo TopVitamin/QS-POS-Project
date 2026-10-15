@@ -1,0 +1,30 @@
+/* 桌面上打开时按手机宽度居中，固定的顶栏、底栏也跟着收窄 */
+.m-shell .van-nav-bar--fixed,
+.m-shell .van-tabbar--fixed,
+.m-fixed-bottom {
+  left: 50%;
+  max-width: 480px;
+  transform: translateX(-50%);
+}
+
+.van-nav-bar__title {
+  font-weight: 600;
+}
+
+.van-cell-group__title {
+  padding-top: 18px;
+  font-weight: 600;
+  color: var(--van-text-color-2);
+}
+
+/* 成功提示常带单号，默认 88px 宽会把单号折成几行 */
+.van-toast--success {
+  width: fit-content;
+  min-width: 128px;
+  max-width: 80%;
+}
+
+/* 单据卡片的按压反馈 */
+.m-press:active {
+  background-color: #f7faf9;
+}
