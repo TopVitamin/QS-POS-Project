@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.local
+
+# Vite / Vitest
+.vite/
+coverage/
+
+# Prototype screenshots (generated, not a deliverable in git)
+09-产品原型/screenshots/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
