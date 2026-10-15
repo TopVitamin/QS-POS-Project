@@ -12,6 +12,7 @@
 
 - 三端共用的类型、mock、计算放`src/shared`。端内页面放`src/apps/<端>/pages`。管理端和收银端只用Naive UI，移动端只用Vant，不混用。
 - 页面只经过`src/shared/api`读写数据，不直接改`src/shared/mock`。中枢的动作只在`mock/hub.ts`里模拟，POS页面不能替中枢做决定。
+- 改了种子或库结构，把`src/shared/mock/schema.ts`的`SCHEMA_VERSION`加一，浏览器里的旧演示库才会重建。
 - 金额用整数分。展示复用`src/shared/utils/format.ts`：金额2位小数加千分位，单价4位小数，空值`-`，主数据按Code-Name。
 - 颜色从`src/shared/theme/tokens.ts`取，图标用Phosphor的`i-ph-*`类名。
 - 不展示成本价和供应商价格。不计算提成、分成、履约佣金和盘亏赔偿金额。不让POS选择仓库、库位或承运商。不把核销金额加进成交净额。

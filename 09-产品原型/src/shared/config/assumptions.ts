@@ -135,7 +135,7 @@ export const ASSUMPTIONS = {
   storeRoster: {
     key: 'storeRoster',
     title: '门店名册',
-    value: '两家直营、两家加盟，都是演示数据；万象天地店沿用叙事店名',
+    value: '两家直营、两家加盟，都是演示数据；万象天地店沿用叙事店名；门店编码应沿用上游（《6.编码规则》），原型用DEMO01这类占位码',
     pending: ['待确认-42', '待确认-50'],
   },
   settlementPeriod: {
