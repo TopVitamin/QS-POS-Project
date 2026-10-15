@@ -4,13 +4,7 @@ import { api } from '@/shared/api'
 import { canAuthorizeFor } from '@/shared/config/permissions'
 import { errorInfo, useRequest } from '@/shared/composables/useRequest'
 import AssumptionTag from './AssumptionTag.vue'
-
-export interface AuthorizeResult {
-  jobNo: string
-  pin: string
-  name: string
-  title: string
-}
+import type { AuthorizeResult } from './types'
 
 /**
  * 授权人确认：工号 + PIN，且有授权职责、门店在其数据范围内。

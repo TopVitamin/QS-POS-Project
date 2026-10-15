@@ -28,6 +28,11 @@ body {
   min-height: 100vh;
 }
 
+/* tailwind-compat 为了兼容组件库不清按钮底色；:where 优先级为 0，Naive、Vant 的按钮样式照常生效 */
+:where(button) {
+  background-color: transparent;
+}
+
 /* 细滚动条 */
 .qs-scroll::-webkit-scrollbar {
   width: 8px;

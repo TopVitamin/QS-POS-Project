@@ -88,6 +88,11 @@ export function findMember(storeId: string, phone: string) {
   })
 }
 
+/** 演示提示用：本店的演示会员手机号（都是虚构号码） */
+export function demoMembers(storeId: string) {
+  return query((db) => db.members.filter((m) => m.storeId === storeId).map((m) => ({ phone: m.phone, name: m.name })))
+}
+
 export function employeeName(jobNo: string) {
   return query((db) => employeeOf(db, jobNo).name)
 }
