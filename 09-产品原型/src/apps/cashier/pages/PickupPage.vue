@@ -12,7 +12,7 @@ import PendingTag from '@/shared/naive/PendingTag.vue'
 import StatusTag from '@/shared/naive/StatusTag.vue'
 import { useFeedback } from '@/shared/naive/feedback'
 import type { PickupOrder, Store, VerificationRecord } from '@/shared/types'
-import { maskName, maskPhone } from '@/shared/utils/format'
+import { maskCode, maskName, maskPhone } from '@/shared/utils/format'
 import { timeOf, todayBizDate } from '@/shared/utils/time'
 import NumPad from '../components/NumPad.vue'
 import { useCart } from '../stores/cart'
@@ -270,7 +270,7 @@ const verdictCls = (ok: boolean) => (ok ? 'border-ok/40 bg-[#E8F7EE] text-[#1665
         <div class="flex gap-2 overflow-x-auto">
           <div v-for="r in (records ?? []).slice(0, 8)" :key="r.id" class="flex shrink-0 items-center gap-2 rounded-10px bg-subtle px-3 py-1.5 text-13px">
             <span :class="r.result === 'success' ? 'i-ph-check-circle-fill text-ok' : 'i-ph-x-circle-fill text-bad'" />
-            <span class="qs-num font-600">{{ r.pickupCode }}</span>
+            <span class="qs-num font-600">{{ r.result === 'success' ? r.pickupCode : maskCode(r.pickupCode) }}</span>
             <span class="text-t3">{{ timeOf(r.at) }} {{ nameOf(r.operatorJobNo) }}</span>
             <span v-if="r.reason" class="text-bad">{{ VERIFY_REJECT[r.reason].label }}</span>
           </div>

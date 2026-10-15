@@ -61,6 +61,12 @@ export function maskName(name?: string | null): string {
   return `${name.slice(0, 1)}${'*'.repeat(Math.max(1, Math.min(2, name.length - 1)))}`
 }
 
+/** 收货地址只露前6个字，够判断大致区域 */
+export function maskAddress(address?: string | null): string {
+  if (!address) return EMPTY
+  return address.length > 6 ? `${address.slice(0, 6)}****` : address
+}
+
 /** 提货码只露前3位：还能用的码只给顾客，后台不展示全码 */
 export function maskCode(code?: string | null): string {
   if (!code) return EMPTY

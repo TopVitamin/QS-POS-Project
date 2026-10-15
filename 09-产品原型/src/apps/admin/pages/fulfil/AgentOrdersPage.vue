@@ -10,7 +10,7 @@ import BillNo from '@/shared/naive/BillNo.vue'
 import PendingTag from '@/shared/naive/PendingTag.vue'
 import StatusTag from '@/shared/naive/StatusTag.vue'
 import type { AgentOrder } from '@/shared/types'
-import { maskCode, maskName, maskPhone, orEmpty } from '@/shared/utils/format'
+import { maskAddress, maskCode, maskName, maskPhone, orEmpty } from '@/shared/utils/format'
 import { bill, clickable, dateTime, money, mono, muted, pagination, status, two } from '../../components/cells'
 import Hint from '../../components/Hint.vue'
 import PageHead from '../../components/PageHead.vue'
@@ -26,8 +26,6 @@ const filter = computed(() => ({ storeIds: storeId.value ? [storeId.value] : adm
 const { data, loading } = useRequest(() => api.fulfil.agentOrders(filter.value), { watch: [filter] })
 
 const SOURCE: Record<AgentOrder['source'], string> = { cashier: '收银端', mobile: '移动端', pickup_rejected: '核销被拒转代发' }
-/** 收货地址只给OMS和承运商用，后台只露开头 */
-const maskAddress = (a: string) => (a.length > 6 ? `${a.slice(0, 6)}****` : a)
 /** 来源提货码：确定已核销或已过期的才显示全码，口径同自提履约单页 */
 const { data: pickups } = useRequest(() => api.fulfil.pickups({ storeIds: admin.storeIds }))
 const sourceCode = (code?: string) => {
