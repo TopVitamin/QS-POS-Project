@@ -1,0 +1,35 @@
+/* 收银端：横屏全屏，禁止整页滚动和误选中文字 */
+html,
+body,
+#app {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  font-size: 16px;
+}
+
+input,
+textarea {
+  user-select: text;
+}
+
+.pos-press {
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+.pos-press:active {
+  transform: scale(0.97);
+}
+
+.receipt-paper {
+  background:
+    radial-gradient(circle at 8px -2px, transparent 7px, #fff 7.5px) -8px 100% / 16px 12px repeat-x,
+    #fff;
+}
