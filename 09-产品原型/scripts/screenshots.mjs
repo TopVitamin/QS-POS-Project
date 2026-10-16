@@ -491,7 +491,7 @@ await step('mobile transfer detail', async () => {
 await step('mobile transfer new', async () => {
   await asMobile('QS1001', 'transfer')
   await phone.getByRole('button', { name: '新建调拨申请' }).click()
-  await phone.getByText('新建调拨申请').waitFor({ timeout: 4000 })
+  await phone.locator('.van-popup--bottom').waitFor({ state: 'visible', timeout: 4000 })
   await shot(phone, 'mobile_22_transfer_new')
 })
 await step('mobile return-wh detail', async () => {
