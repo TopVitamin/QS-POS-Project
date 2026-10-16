@@ -354,6 +354,12 @@ const toMobile = async (hash) => {
   await phone.goto(`${BASE}/mobile.html#/${hash}`)
   await settle(phone, 500)
 }
+const tapCard = async () => {
+  const card = phone.locator('.m-press').locator('visible=true').first()
+  await card.waitFor({ timeout: 4000 })
+  await card.click()
+  await phone.locator('.van-popup--bottom').waitFor({ state: 'visible', timeout: 4000 })
+}
 
 await step('mobile home', async () => {
   await asMobile('QS1001', 'home')
@@ -474,52 +480,44 @@ await step('mobile stocktake list', async () => {
 })
 await step('mobile replenish detail', async () => {
   await asMobile('QS1001', 'replenish')
-  await phone.locator('.m-press').first().click()
-  await phone.locator('.van-popup--show').waitFor({ timeout: 4000 })
+  await tapCard()
   await shot(phone, 'mobile_20_replenish_detail')
+})
+await step('mobile transfer detail', async () => {
+  await asMobile('QS1001', 'transfer')
+  await tapCard()
+  await shot(phone, 'mobile_21_transfer_detail')
 })
 await step('mobile transfer new', async () => {
   await asMobile('QS1001', 'transfer')
-  await phone.locator('.m-press').first().click()
-  await phone.locator('.van-popup--show').waitFor({ timeout: 4000 })
-  await shot(phone, 'mobile_21_transfer_detail')
-  await phone.locator('.van-popup__close-icon').first().click().catch(() => {})
   await phone.getByRole('button', { name: '新建调拨申请' }).click()
   await phone.getByText('新建调拨申请').waitFor({ timeout: 4000 })
   await shot(phone, 'mobile_22_transfer_new')
 })
 await step('mobile return-wh detail', async () => {
   await asMobile('QS1001', 'return-wh')
-  await phone.locator('.m-press').first().click()
-  await phone.locator('.van-popup--show').waitFor({ timeout: 4000 })
+  await tapCard()
   await shot(phone, 'mobile_23_return_wh_detail')
 })
 await step('mobile fulfil pickup detail', async () => {
   await asMobile('QS1001', 'fulfil')
-  await phone.locator('.m-press').first().click()
-  await phone.locator('.van-popup--show').waitFor({ timeout: 4000 })
+  await tapCard()
   await shot(phone, 'mobile_24_fulfil_pickup_detail')
 })
 await step('mobile dropship detail', async () => {
   await asMobile('QS2001', 'fulfil?tab=dropship')
   await phone.getByText('本店代发').first().waitFor({ timeout: 4000 })
-  await phone.locator('.m-press').first().click()
-  await phone.locator('.van-popup--show').waitFor({ timeout: 4000 })
+  await tapCard()
   await shot(phone, 'mobile_25_dropship_detail')
 })
 await step('mobile daily shift', async () => {
   await asMobile('QS1001', 'daily')
-  await phone.locator('.m-press').first().click()
-  await phone.locator('.van-popup--show').waitFor({ timeout: 4000 })
+  await tapCard()
   await shot(phone, 'mobile_26_daily_shift')
 })
 await step('mobile performance detail', async () => {
   await asMobile('QS1001', 'performance')
-  const card = phone.locator('.m-press').first()
-  if (await card.count()) {
-    await card.click()
-    await phone.locator('.van-popup--show').waitFor({ timeout: 4000 })
-  }
+  await tapCard()
   await shot(phone, 'mobile_27_performance_detail')
 })
 
