@@ -7,7 +7,7 @@ import { AUDIT_ACTION } from '@/shared/config/labels'
 import type { AuditAction, AuditLog } from '@/shared/types'
 import { maskCode } from '@/shared/utils/format'
 import { addDays, todayBizDate } from '@/shared/utils/time'
-import { bill, dateTime, link, mono, muted, pagination, two } from '../../components/cells'
+import { bill, clickable, dateTime, link, mono, muted, pagination, two } from '../../components/cells'
 import Hint from '../../components/Hint.vue'
 import PageHead from '../../components/PageHead.vue'
 import StoreSelect from '../../components/StoreSelect.vue'
@@ -74,6 +74,15 @@ const columns: DataTableColumns<AuditLog> = [
   { title: '后值', key: 'after', minWidth: 260, ellipsis: { tooltip: true }, render: (l) => l.after ?? muted('-') },
   { title: '原因', key: 'reason', width: 160, ellipsis: { tooltip: true }, render: (l) => l.reason ?? muted('-') },
 ]
+
+const openId = ref('')
+const current = computed(() => shown.value.find((l) => l.id === openId.value) ?? null)
+const show = computed({
+  get: () => !!openId.value,
+  set: (v) => {
+    if (!v) openId.value = ''
+  },
+})
 </script>
 
 <template>
@@ -124,9 +133,30 @@ const columns: DataTableColumns<AuditLog> = [
         :loading="loading && !data"
         :pagination="pagination"
         :row-key="(l: AuditLog) => l.id"
+        :row-props="clickable((l: AuditLog) => (openId = l.id))"
         :scroll-x="1650"
         :bordered="false"
       />
     </div>
+
+    <n-drawer v-model:show="show" :width="520">
+      <n-drawer-content v-if="current" closable :native-scrollbar="false">
+        <template #header>
+          <span class="flex items-center gap-2">{{ current.action }} <span class="qs-num text-13px font-400 text-t3">{{ current.at }}</span></span>
+        </template>
+        <n-descriptions :column="1" label-placement="left" size="small" bordered>
+          <n-descriptions-item label="门店">{{ current.storeId ? admin.storeText(current.storeId) : '不挂门店' }}</n-descriptions-item>
+          <n-descriptions-item label="操作者">{{ admin.who(current.operatorJobNo) }}</n-descriptions-item>
+          <n-descriptions-item label="授权人">{{ current.authorizerJobNo ? admin.who(current.authorizerJobNo) : '-' }}</n-descriptions-item>
+          <n-descriptions-item label="对象">{{ current.objectType }} · {{ current.objectNo }}</n-descriptions-item>
+          <n-descriptions-item label="前值">{{ current.before ?? '-' }}</n-descriptions-item>
+          <n-descriptions-item label="后值">{{ current.after ?? '-' }}</n-descriptions-item>
+          <n-descriptions-item label="原因">{{ current.reason ?? '-' }}</n-descriptions-item>
+        </n-descriptions>
+        <div v-if="TRACEABLE.includes(current.objectType)" class="mt-4">
+          <router-link :to="{ name: 'audit-trace', query: { q: current.objectNo } }" class="text-13px text-brand-700 hover:underline">到交易追溯看 {{ current.objectNo }}</router-link>
+        </div>
+      </n-drawer-content>
+    </n-drawer>
   </div>
 </template>

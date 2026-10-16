@@ -51,6 +51,7 @@ interface Todo {
   label: string
   count: number
   route: string
+  query?: Record<string, string>
   perm: Perm
   icon: string
   hint: string
@@ -64,6 +65,8 @@ const todos = computed<Todo[]>(() => {
     { label: '在途待收货', count: t.inTransit, route: 'receipts', perm: 'storeops.view', icon: 'i-ph-tray-arrow-down-fill', hint: '按出库单逐行录实收' },
     { label: '盘点差异待授权', count: t.stocktakeToPost, route: 'stocktakes', perm: 'storeops.view', icon: 'i-ph-list-checks-bold', hint: '授权前不改可用' },
     { label: '要货审核中', count: t.replenishReviewing, route: 'replenishments', perm: 'storeops.view', icon: 'i-ph-clipboard-text-fill', hint: '中枢审核，本店可用不变' },
+    { label: '店间调拨待审核', count: t.transfersReviewing, route: 'transfers', perm: 'storeops.view', icon: 'i-ph-arrows-left-right-bold', hint: '有单据才改库存' },
+    { label: '本店待代发', count: t.dropshipsPending, route: 'agent-orders', query: { dropship: '1' }, perm: 'fulfil.view', icon: 'i-ph-path-bold', hint: 'OMS把代客单路由到本店' },
     { label: '收货差异待处理', count: t.discrepancies, route: 'receipts', perm: 'storeops.view', icon: 'i-ph-seal-warning-fill', hint: '责任见【待确认-22】' },
     { label: '当班中的班次', count: t.openShifts, route: 'shifts', perm: 'shift.view', icon: 'i-ph-clock-counter-clockwise-bold', hint: '交班后才能日结' },
     { label: '往日未日结', count: t.unclosedDays, route: 'daily-close', perm: 'shift.view', icon: 'i-ph-calendar-check-fill', hint: '营业日封账' },
@@ -124,7 +127,7 @@ const todos = computed<Todo[]>(() => {
             <div class="flex items-center gap-2 text-12px text-t3">营业日按自然日切日 <AssumptionTag k="bizDay" /></div>
           </div>
           <div class="mt-4 grid h-220px grid-cols-7 items-end gap-3">
-            <div v-for="d in data.days" :key="d.date" class="flex h-full flex-col items-center justify-end gap-1.5">
+            <div v-for="d in data.days" :key="d.date" class="flex h-full cursor-pointer flex-col items-center justify-end gap-1.5" @click="picked = d.date">
               <span class="qs-num whitespace-nowrap text-11px" :class="d.date === bizDate ? 'font-700 text-t1' : 'text-t3'">{{ formatMoney(d.net) }}</span>
               <div
                 class="w-full max-w-56px rounded-t-8px transition-all"
@@ -176,7 +179,7 @@ const todos = computed<Todo[]>(() => {
             <router-link v-if="admin.has('shift.view')" :to="{ name: 'daily-close' }" class="text-13px text-brand-700 hover:underline">去日结</router-link>
           </div>
           <div class="mt-2 flex flex-col">
-            <div v-for="(s, i) in data.stores" :key="s.store.id" class="flex items-center gap-3 border-b border-line py-2.5 last:border-0">
+            <div v-for="(s, i) in data.stores" :key="s.store.id" class="flex cursor-pointer items-center gap-3 border-b border-line py-2.5 last:border-0 hover:bg-subtle" @click="storeId = s.store.id">
               <span class="qs-flex-center qs-num h-24px w-24px shrink-0 rounded-6px text-13px font-700" :class="i === 0 ? 'bg-volt-400 text-ink-900' : 'bg-subtle text-t2'">{{ i + 1 }}</span>
               <div class="min-w-0 flex-1 leading-tight">
                 <div class="flex items-center gap-1.5">
@@ -201,7 +204,7 @@ const todos = computed<Todo[]>(() => {
             <router-link
               v-for="t in todos"
               :key="t.label"
-              :to="{ name: t.route }"
+              :to="{ name: t.route, query: t.query }"
               class="group flex items-center gap-2.5 rounded-12px border px-3 py-2.5 transition-colors"
               :class="t.count ? 'border-[#F5D9A8] bg-[#FFFBF2] hover:border-warn' : 'border-line hover:border-brand-300'"
             >

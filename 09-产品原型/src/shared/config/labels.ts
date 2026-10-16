@@ -101,6 +101,14 @@ export const RTW_STATUS: Record<'submitted' | 'approved' | 'shipped', LabelDef> 
   shipped: { label: '已交运', tone: 'success' },
 }
 
+export const TRANSFER_STATUS: Record<'reviewing' | 'rejected' | 'approved' | 'shipped' | 'received', LabelDef> = {
+  reviewing: { label: '中枢审核中', tone: 'info' },
+  rejected: { label: '已驳回', tone: 'error' },
+  approved: { label: '已审核待发', tone: 'primary' },
+  shipped: { label: '在途', tone: 'warning' },
+  received: { label: '已收货', tone: 'success' },
+}
+
 export const SHIFT_STATUS: Record<'open' | 'closed', LabelDef> = {
   open: { label: '当班中', tone: 'info' },
   closed: { label: '已交班', tone: 'success' },
@@ -129,6 +137,8 @@ export const LEDGER_TYPE: Record<LedgerType, string> = {
   receipt: '收货',
   stocktake: '盘点调账',
   return_wh: '退仓',
+  transfer_out: '店间调出',
+  dropship: '门店代发',
 }
 
 export const DUTY: Record<Duty, { label: string; desc: string }> = {
@@ -158,6 +168,9 @@ export const AUDIT_ACTION: Record<AuditAction, { tone: Tone; required: boolean }
   支付查单: { tone: 'info', required: false },
   撤销收款: { tone: 'warning', required: false },
   重复回传: { tone: 'default', required: false },
+  店间调拨: { tone: 'info', required: false },
+  停接开关: { tone: 'warning', required: false },
+  门店代发: { tone: 'primary', required: false },
 }
 
 export const RETURN_REASONS = ['质量问题', '不想要了', '买错型号', '换货', '其他']

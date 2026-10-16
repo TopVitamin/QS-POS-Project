@@ -1,16 +1,30 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { api } from '@/shared/api'
 import { STORE_MODE } from '@/shared/config/labels'
 import AssumptionTag from '@/shared/naive/AssumptionTag.vue'
+import { useFeedback } from '@/shared/naive/feedback'
 import PendingTag from '@/shared/naive/PendingTag.vue'
-import type { PendingId } from '@/shared/types'
+import type { PendingId, Store } from '@/shared/types'
 import { codeName } from '@/shared/utils/format'
 import Hint from '../../components/Hint.vue'
 import PageHead from '../../components/PageHead.vue'
 import { useAdmin } from '../../stores/session'
 
 const admin = useAdmin()
+const fb = useFeedback()
 const stores = computed(() => admin.scopedStores)
+const canPause = (s: Store) => admin.has('storeops.manage') && admin.storeIds.includes(s.id)
+const busyId = ref('')
+async function togglePause(s: Store, on: boolean) {
+  if (!admin.user) return
+  busyId.value = s.id
+  await fb.run(
+    () => api.storeops.setRoutingPause({ storeId: s.id, paused: !on, operatorJobNo: admin.user!.jobNo }),
+    (x) => (x.pausedForRouting ? `${x.name}已临时停接自提和代发` : `${x.name}已恢复接单`),
+  )
+  busyId.value = ''
+}
 
 /** 《7.模式说明》§二：2026-10-15确认，不能做成可选开关 */
 const CONFIRMED = [
@@ -76,7 +90,15 @@ const CONTRACT: { label: string; pending: PendingId[] }[] = [
             <span>{{ admin.franchiseeText(s.franchiseeId) }}</span>
           </template>
           <span class="text-t3">自提和代发</span>
-          <span>{{ s.pausedForRouting ? '临时停接（盘点或停业），不改合同上的「参与路由」' : '正常接单' }}</span>
+          <span class="flex items-center gap-2">
+            <span>{{ s.pausedForRouting ? '临时停接（盘点或停业），不改合同上的「参与路由」' : '正常接单' }}</span>
+            <n-switch
+              v-if="canPause(s)"
+              :value="!s.pausedForRouting"
+              :loading="busyId === s.id"
+              @update:value="(on: boolean) => togglePause(s, on)"
+            />
+          </span>
         </div>
 
         <template v-if="s.mode === 'franchise'">

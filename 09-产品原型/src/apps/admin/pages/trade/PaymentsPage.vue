@@ -8,13 +8,15 @@ import PendingTag from '@/shared/naive/PendingTag.vue'
 import StatusTag from '@/shared/naive/StatusTag.vue'
 import { payColors } from '@/shared/theme/tokens'
 import type { PayMethod, Payment } from '@/shared/types'
+import MoneyText from '@/shared/components/MoneyText.vue'
 import { formatMoney } from '@/shared/utils/format'
 import { todayBizDate } from '@/shared/utils/time'
-import { bill, dateTime, money, mono, muted, pagination, two } from '../../components/cells'
+import { bill, clickable, dateTime, money, mono, muted, pagination, two } from '../../components/cells'
 import Hint from '../../components/Hint.vue'
 import PageHead from '../../components/PageHead.vue'
 import StoreSelect from '../../components/StoreSelect.vue'
 import { useAdmin } from '../../stores/session'
+import BillNo from '@/shared/naive/BillNo.vue'
 
 const admin = useAdmin()
 const storeId = ref<string | null>(null)
@@ -68,6 +70,17 @@ const columns: DataTableColumns<PaymentRow> = [
   { title: '通道流水号（原样）', key: 'channelTxnNo', minWidth: 210, render: (r) => (r.channelTxnNo ? mono(r.channelTxnNo) : muted(r.method === 'cash' ? '现金没有通道流水号' : '-')) },
   { title: '备注', key: 'note', width: 180, ellipsis: { tooltip: true }, render: (r) => r.note ?? '' },
 ]
+
+const open = ref<PaymentRow | null>(null)
+const show = computed({
+  get: () => !!open.value,
+  set: (v) => {
+    if (!v) open.value = null
+  },
+})
+const current = computed(() => (open.value ? data.value.find((r) => r.id === open.value!.id) ?? open.value : null))
+const saleLink = (no: string) => no.startsWith('MDXS-')
+const returnLink = (no: string) => no.startsWith('MDTH-')
 </script>
 
 <template>
@@ -106,9 +119,43 @@ const columns: DataTableColumns<PaymentRow> = [
         :loading="loading && !all"
         :pagination="pagination"
         :row-key="(r: PaymentRow) => r.id"
+        :row-props="clickable((r: PaymentRow) => (open = r))"
         :scroll-x="1390"
         :bordered="false"
       />
     </div>
+
+    <n-drawer v-model:show="show" :width="520">
+      <n-drawer-content v-if="current" closable :native-scrollbar="false">
+        <template #header>
+          <span class="flex items-center gap-2">支付流水 <StatusTag :def="PAYMENT_STATUS[current.status]" /></span>
+        </template>
+        <div class="flex flex-col gap-4 text-14px">
+          <n-descriptions :column="1" label-placement="left" size="small" bordered>
+            <n-descriptions-item label="类型">{{ KIND[current.kind] }}</n-descriptions-item>
+            <n-descriptions-item label="门店">{{ admin.storeText(current.storeId) }}</n-descriptions-item>
+            <n-descriptions-item label="时间"><span class="qs-num">{{ current.createdAt }}</span></n-descriptions-item>
+            <n-descriptions-item label="支付方式">{{ PAY_METHOD[current.method].label }}</n-descriptions-item>
+            <n-descriptions-item label="金额"><MoneyText :value="current.kind === 'refund' ? -current.amount : current.amount" strong /></n-descriptions-item>
+            <n-descriptions-item label="通道流水号">
+              <span v-if="current.channelTxnNo" class="font-mono">{{ current.channelTxnNo }}</span>
+              <span v-else class="text-t3">{{ current.method === 'cash' ? '现金没有通道流水号' : '-' }}</span>
+            </n-descriptions-item>
+            <n-descriptions-item v-if="current.queriedAt" label="查单确认"><span class="qs-num">{{ current.queriedAt }}</span></n-descriptions-item>
+            <n-descriptions-item label="关联单据">
+              <router-link v-if="saleLink(current.docNo)" :to="{ name: 'sale-detail', params: { no: current.docNo } }" class="text-brand-700 hover:underline">
+                <BillNo :no="current.docNo" plain />
+              </router-link>
+              <router-link v-else-if="returnLink(current.docNo)" :to="{ name: 'returns' }" class="text-brand-700 hover:underline">
+                <BillNo :no="current.docNo" plain />
+              </router-link>
+              <span v-else class="text-t3">{{ current.docNo === '-' ? '未成单，没有销售单' : current.docNo }}</span>
+            </n-descriptions-item>
+            <n-descriptions-item v-if="current.note" label="备注">{{ current.note }}</n-descriptions-item>
+          </n-descriptions>
+          <Hint>以通道结果为准。结果不明只能按通道查单，不能在POS里改成成功（《4.全局业务规则》§三）</Hint>
+        </div>
+      </n-drawer-content>
+    </n-drawer>
   </div>
 </template>

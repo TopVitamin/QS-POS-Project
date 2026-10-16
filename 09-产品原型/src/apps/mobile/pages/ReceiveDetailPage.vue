@@ -72,7 +72,9 @@ async function submit() {
         <div class="mt-1.5 grid grid-cols-2 gap-y-1 text-12px text-t2">
           <span>调出 {{ shipment.sourceNodeName }}</span>
           <span>发运 {{ shortDate(shipment.shippedAt) }} {{ timeOf(shipment.shippedAt) }}</span>
-          <span>要货单 <MBillNo :no="shipment.replenishmentNo" plain /></span>
+          <span v-if="shipment.replenishmentNo">要货单 <MBillNo :no="shipment.replenishmentNo" plain /></span>
+          <span v-else-if="shipment.transferNo">调拨单 <MBillNo :no="shipment.transferNo" plain /></span>
+          <span v-else>来源单据 -</span>
           <span>{{ shipment.lines.length }}行 · {{ shipment.lines.reduce((s, l) => s + l.qty, 0) }}件</span>
         </div>
         <div class="mt-1.5 text-12px text-t3">出库单号按中枢原样保存，收货单必须指回这张出库单</div>

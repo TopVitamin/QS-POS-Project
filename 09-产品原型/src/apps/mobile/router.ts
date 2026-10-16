@@ -17,6 +17,7 @@ const pages: RouteRecordRaw[] = [
   { path: 'stocktake', name: 'stocktake', component: () => import('./pages/StocktakePage.vue'), meta: { title: '盘点', perms: ['storeops.view'] } },
   { path: 'stocktake/:no', name: 'stocktake-detail', component: () => import('./pages/StocktakeDetailPage.vue'), meta: { title: '盘点单', perms: ['storeops.view'] } },
   { path: 'return-wh', name: 'return-wh', component: () => import('./pages/ReturnWhPage.vue'), meta: { title: '退仓', perms: ['storeops.view'] } },
+  { path: 'transfer', name: 'transfer', component: () => import('./pages/TransferPage.vue'), meta: { title: '店间调拨', perms: ['storeops.view'] } },
   { path: 'performance', name: 'performance', component: () => import('./pages/PerformancePage.vue'), meta: { title: '我的业绩', perms: ['performance.self'] } },
   { path: 'daily', name: 'daily', component: () => import('./pages/DailyPage.vue'), meta: { title: '门店日报', perms: ['shift.view'] } },
 ]

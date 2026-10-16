@@ -173,7 +173,7 @@ const openProduct = computed(() => (open.value ? productMap.value.get(open.value
               </div>
             </div>
           </div>
-          <Hint>锁定和在途不进流水；流水只记账面的变化：销售、退货、核销、收货、盘点调账和退仓</Hint>
+          <Hint>锁定和在途不进流水；流水只记账面的变化：销售、退货、核销、收货、盘点调账、退仓、店间调出和门店代发</Hint>
         </div>
         <div v-else class="py-16 text-center"><n-spin /></div>
       </n-drawer-content>

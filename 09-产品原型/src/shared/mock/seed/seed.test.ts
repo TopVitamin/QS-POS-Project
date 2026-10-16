@@ -46,7 +46,7 @@ describe.each(MOMENTS)('种子数据 @ %s', (moment) => {
       expect(paid).toBe(s.totals.payable)
       expect(s.hubSync.status).toBe('accepted')
     }
-    const nos = [...db.sales, ...db.returns, ...db.shifts, ...db.dailyCloses, ...db.dues].map((x) => x.no)
+    const nos = [...db.sales, ...db.returns, ...db.shifts, ...db.dailyCloses, ...db.dues, ...db.transfers, ...db.replenishments].map((x) => x.no)
     expect(new Set(nos).size).toBe(nos.length)
   })
 
@@ -93,5 +93,23 @@ describe.each(MOMENTS)('种子数据 @ %s', (moment) => {
     const issued = db.members.filter((m) => m.coupons.length)
     expect(issued.length).toBeGreaterThan(0)
     for (const m of issued) expect(m.coupons.some((c) => c.status === 'unused')).toBe(true)
+  })
+
+  it('店间调拨有单据才改库存，收货后调入店账面增加', () => {
+    expect(db.transfers.length).toBeGreaterThan(0)
+    const received = db.transfers.find((t) => t.status === 'received')
+    expect(received).toBeTruthy()
+    const ship = db.shipments.find((s) => s.transferNo === received!.no)
+    expect(ship?.status).toBe('received')
+    expect(db.ledger.some((l) => l.type === 'transfer_out' && l.refNo === received!.no)).toBe(true)
+    expect(db.ledger.some((l) => l.type === 'receipt' && l.refNo === ship!.receiptNo)).toBe(true)
+  })
+
+  it('门店代发扣的是被路由选中的店，不扣发起店', () => {
+    const shipped = db.agentOrders.find((o) => o.oms.nodeKind === 'store' && o.status === 'signed')
+    expect(shipped).toBeTruthy()
+    expect(shipped!.oms.nodeStoreId).not.toBe(shipped!.storeId)
+    expect(db.ledger.some((l) => l.type === 'dropship' && l.refNo === shipped!.no && l.storeId === shipped!.oms.nodeStoreId)).toBe(true)
+    expect(db.ledger.some((l) => l.type === 'dropship' && l.refNo === shipped!.no && l.storeId === shipped!.storeId)).toBe(false)
   })
 })

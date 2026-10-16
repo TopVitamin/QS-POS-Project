@@ -9,7 +9,7 @@ export interface StockRecord {
   inTransit: number
 }
 
-export type LedgerType = 'sale' | 'return' | 'pickup' | 'receipt' | 'stocktake' | 'return_wh'
+export type LedgerType = 'sale' | 'return' | 'pickup' | 'receipt' | 'stocktake' | 'return_wh' | 'transfer_out' | 'dropship'
 
 /** 门店库存流水：回传，不是可售真相。对不上时以中枢已接受的结果为准 */
 export interface StockLedger {
@@ -54,6 +54,8 @@ export interface InboundShipment {
   storeId: string
   sourceNodeName: string
   replenishmentNo?: string
+  /** 店间调拨发运后也会生成在途出库单，调入店按同一套收货 */
+  transferNo?: string
   lines: SkuQtyLine[]
   shippedAt: DateTimeText
   status: 'in_transit' | 'received'
@@ -129,4 +131,25 @@ export interface ReturnToWarehouse {
   lines: SkuQtyLine[]
   status: 'submitted' | 'approved' | 'shipped'
   hub: { approvedAt?: DateTimeText; targetNodeName?: string; shippedAt?: DateTimeText }
+}
+
+/**
+ * 店间调拨申请。是否允许直营与加盟、加盟店之间调拨见【待确认-26】。
+ * 原型按演示假设允许任意两家演示门店走单据，没有单据的调货不改任何一边的可用量。
+ */
+export interface StoreTransfer {
+  no: string
+  fromStoreId: string
+  toStoreId: string
+  createdAt: DateTimeText
+  creatorJobNo: string
+  lines: SkuQtyLine[]
+  note: string
+  status: 'reviewing' | 'rejected' | 'approved' | 'shipped' | 'received'
+  hub: {
+    reviewedAt?: DateTimeText
+    reviewNote?: string
+    outboundNo?: string
+    shippedAt?: DateTimeText
+  }
 }

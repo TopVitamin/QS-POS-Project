@@ -1,4 +1,4 @@
-import type { Replenishment, ReturnToWarehouse, Stocktake } from '../types'
+import type { Replenishment, ReturnToWarehouse, Stocktake, StoreTransfer } from '../types'
 import { canAuthorizeFor } from '../config/permissions'
 import { nextBillNo } from '../domain/numbering'
 import { stocktakeDiffs } from '../domain/rules'
@@ -192,4 +192,70 @@ export function createRtw(input: { storeId: string; creatorJobNo: string; reason
 
 export function rtws(f: { storeIds?: string[] } = {}) {
   return query((db) => db.returnsToWarehouse.filter(inStores(f.storeIds)).sort(byTimeDesc((r) => r.createdAt)))
+}
+
+// ---------- 店间调拨：申请，审核发运在中枢，调入店按出库单收货 ----------
+
+export function createTransfer(input: { fromStoreId: string; toStoreId: string; creatorJobNo: string; items: QtyInput; note: string }) {
+  return command((db) => {
+    requirePerm(db, input.creatorJobNo, 'storeops.manage', input.toStoreId)
+    if (input.fromStoreId === input.toStoreId) fail('调出店和调入店不能相同')
+    storeOf(db, input.fromStoreId)
+    const to = storeOf(db, input.toStoreId)
+    const lines = toLines(db, input.items)
+    const at = nowText()
+    const t: StoreTransfer = {
+      no: nextBillNo(db.counters, 'transfer', at),
+      fromStoreId: input.fromStoreId,
+      toStoreId: input.toStoreId,
+      createdAt: at,
+      creatorJobNo: input.creatorJobNo,
+      lines,
+      note: input.note.trim(),
+      status: 'reviewing',
+      hub: {},
+    }
+    db.transfers.push(t)
+    hub.audit(db, {
+      action: '店间调拨',
+      at,
+      operatorJobNo: input.creatorJobNo,
+      storeId: to.id,
+      objectType: '店间调拨单',
+      objectNo: t.no,
+      after: `向${storeOf(db, input.fromStoreId).name}申请调入 ${lines.map((l) => `${l.name}×${l.qty}`).join('、')}`,
+    })
+    return t
+  })
+}
+
+export function transfers(f: { storeIds?: string[]; status?: StoreTransfer['status'] } = {}) {
+  return query((db) =>
+    db.transfers
+      .filter((t) => {
+        if (f.status && t.status !== f.status) return false
+        if (!f.storeIds) return true
+        return f.storeIds.includes(t.fromStoreId) || f.storeIds.includes(t.toStoreId)
+      })
+      .sort(byTimeDesc((t) => t.createdAt)),
+  )
+}
+
+/** 店长临时停接自提和代发，不改合同上的「参与路由」 */
+export function setRoutingPause(input: { storeId: string; paused: boolean; operatorJobNo: string }) {
+  return command((db) => {
+    requirePerm(db, input.operatorJobNo, 'storeops.manage', input.storeId)
+    const s = storeOf(db, input.storeId)
+    s.pausedForRouting = input.paused
+    hub.audit(db, {
+      action: '停接开关',
+      operatorJobNo: input.operatorJobNo,
+      storeId: s.id,
+      objectType: '门店',
+      objectNo: s.code,
+      before: input.paused ? '接单中' : '临时停接',
+      after: input.paused ? '临时停接' : '恢复接单',
+    })
+    return s
+  })
 }

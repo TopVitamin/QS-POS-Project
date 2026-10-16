@@ -2,10 +2,10 @@
 import { computed, h, ref } from 'vue'
 import { NTag, type DataTableColumns } from 'naive-ui'
 import { DUTY } from '@/shared/config/labels'
-import { DUTY_ORDER } from '@/shared/config/permissions'
+import { canEnter, DUTY_ORDER, END_LABEL } from '@/shared/config/permissions'
 import PendingTag from '@/shared/naive/PendingTag.vue'
 import type { Duty, SessionUser } from '@/shared/types'
-import { mono, muted, two } from '../../components/cells'
+import { clickable, mono, muted, two } from '../../components/cells'
 import Hint from '../../components/Hint.vue'
 import PageHead from '../../components/PageHead.vue'
 import { useAdmin } from '../../stores/session'
@@ -40,6 +40,18 @@ const columns: DataTableColumns<SessionUser> = [
   { title: '状态', key: 'active', width: 80, render: (e) => h(NTag, { size: 'small', bordered: false, type: e.active ? 'success' : 'default' }, () => (e.active ? '启用' : '停用')) },
 ]
 const dutyOptions = DUTY_ORDER.map((d) => ({ label: DUTY[d].label, value: d }))
+
+const openNo = ref('')
+const current = computed(() => rows.value.find((e) => e.jobNo === openNo.value) ?? null)
+const show = computed({
+  get: () => !!openNo.value,
+  set: (v) => {
+    if (!v) openNo.value = ''
+  },
+})
+const endsOf = (e: SessionUser) => (['cashier', 'mobile', 'admin'] as const).filter((end) => canEnter(e, end))
+const dutiesText = (e: SessionUser) => e.duties.map((d) => DUTY[d].label).join('、')
+const endsText = (e: SessionUser) => endsOf(e).map((end) => END_LABEL[end]).join('、') || '无'
 </script>
 
 <template>
@@ -62,7 +74,30 @@ const dutyOptions = DUTY_ORDER.map((d) => ({ label: DUTY[d].label, value: d }))
     </Hint>
 
     <div class="qs-card overflow-hidden">
-      <n-data-table :columns="columns" :data="rows" :row-key="(e: SessionUser) => e.jobNo" :scroll-x="1100" :bordered="false" />
+      <n-data-table
+        :columns="columns"
+        :data="rows"
+        :row-key="(e: SessionUser) => e.jobNo"
+        :row-props="clickable((e: SessionUser) => (openNo = e.jobNo))"
+        :scroll-x="1100"
+        :bordered="false"
+      />
     </div>
+
+    <n-drawer v-model:show="show" :width="480">
+      <n-drawer-content v-if="current" closable :native-scrollbar="false">
+        <template #header>{{ current.jobNo }} {{ current.name }}</template>
+        <n-descriptions :column="1" label-placement="left" size="small" bordered>
+          <n-descriptions-item label="职务">{{ current.title }}</n-descriptions-item>
+          <n-descriptions-item label="所属">{{ current.employer === 'qs' ? '强盛员工' : '加盟商员工' }}</n-descriptions-item>
+          <n-descriptions-item label="职责">{{ dutiesText(current) }}</n-descriptions-item>
+          <n-descriptions-item label="授权门店">{{ current.storeIds.length ? current.storeIds.map((id) => admin.storeText(id)).join('、') : '不到店' }}</n-descriptions-item>
+          <n-descriptions-item label="加盟商">{{ current.franchiseeId ? admin.franchiseeText(current.franchiseeId) : '-' }}</n-descriptions-item>
+          <n-descriptions-item label="能进的端">{{ endsText(current) }}</n-descriptions-item>
+          <n-descriptions-item label="状态">{{ current.active ? '启用' : '停用' }}</n-descriptions-item>
+        </n-descriptions>
+        <Hint class="mt-4">工号是业绩归属主键。这里不显示PIN。账号开通和数据范围编辑原型只展示，不改权限</Hint>
+      </n-drawer-content>
+    </n-drawer>
   </div>
 </template>

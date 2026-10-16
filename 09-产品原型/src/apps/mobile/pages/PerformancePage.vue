@@ -24,6 +24,11 @@ const from = computed(() => RANGES.find((r) => r.key === range.value)!.from)
 
 const { data: perf } = useRequest(() => api.dashboard.performance({ jobNo: mobile.user!.jobNo, from: from.value, to: today }), { watch: [from] })
 const maxNet = computed(() => Math.max(1, ...(perf.value?.days ?? []).map((d) => d.net)))
+
+const openSaleNo = ref('')
+const { data: saleDetail } = useRequest(() => (openSaleNo.value ? api.sales.get(openSaleNo.value) : Promise.resolve(null)), { watch: [openSaleNo] })
+const openAgentNo = ref('')
+const currentAgent = computed(() => (perf.value?.agents ?? []).find((o) => o.no === openAgentNo.value) ?? null)
 </script>
 
 <template>
@@ -67,7 +72,7 @@ const maxNet = computed(() => Math.max(1, ...(perf.value?.days ?? []).map((d) =>
     </Section>
 
     <Section title="最近的成交行" desc="按销售单行上的导购工号归属，一张单可以有多个导购">
-      <div v-for="(r, i) in perf?.recent ?? []" :key="`${r.saleNo}-${i}`" class="flex items-center gap-3 border-t border-line px-4 py-2.5">
+      <div v-for="(r, i) in perf?.recent ?? []" :key="`${r.saleNo}-${i}`" class="m-press flex items-center gap-3 border-t border-line px-4 py-2.5" @click="openSaleNo = r.saleNo">
         <div class="min-w-0 flex-1">
           <div class="truncate text-14px">{{ r.name }} <span class="qs-num text-t3">×{{ r.qty }}</span></div>
           <div class="truncate text-12px text-t3"><MBillNo :no="r.saleNo" plain /> · {{ shortDate(r.at) }} {{ timeOf(r.at) }}</div>
@@ -81,7 +86,7 @@ const maxNet = computed(() => Math.max(1, ...(perf.value?.days ?? []).map((d) =>
     </Section>
 
     <Section title="我发起的代客单" desc="业绩记在发起门店和导购工号上，钱不在POS收">
-      <div v-for="o in perf?.agents ?? []" :key="o.no" class="border-t border-line px-4 py-2.5">
+      <div v-for="o in perf?.agents ?? []" :key="o.no" class="m-press border-t border-line px-4 py-2.5" @click="openAgentNo = o.no">
         <div class="flex items-center gap-2 text-13px">
           <MBillNo :no="o.no" plain />
           <div class="flex-1" />
@@ -98,5 +103,44 @@ const maxNet = computed(() => Math.max(1, ...(perf.value?.days ?? []).map((d) =>
       原型的退货按原单行的已退金额扣在原成交那天
       <template v-if="mobile.store?.mode === 'franchise'">。加盟店店员的提成由谁计算和发放 <MPendingTag id="待确认-36" /></template>
     </Note>
+
+    <van-popup :show="!!openSaleNo" position="bottom" round closeable teleport="body" :style="{ maxHeight: '80%' }" @update:show="(v: boolean) => !v && (openSaleNo = '')">
+      <div class="px-4 pb-8 pt-5">
+        <div v-if="saleDetail" class="">
+          <div class="flex items-center gap-2">
+            <MBillNo :no="saleDetail.sale.no" class="text-15px font-700" />
+          </div>
+          <div class="mt-2 text-13px text-t2">{{ saleDetail.sale.createdAt }} · {{ saleDetail.sale.lines.length }}行</div>
+          <div class="mt-3 rounded-12px border border-line">
+            <div v-for="l in saleDetail.sale.lines" :key="l.lineNo" class="flex justify-between border-b border-line px-3 py-2 last:border-0">
+              <span>{{ l.name }} <span class="qs-num text-t3">×{{ l.qty }}</span></span>
+              <MoneyText :value="l.payable" />
+            </div>
+          </div>
+          <div class="mt-2 flex justify-between text-14px font-600">
+            <span>成交应付</span>
+            <MoneyText :value="saleDetail.sale.totals.payable" strong />
+          </div>
+        </div>
+        <div v-else class="py-10 text-center"><van-loading /></div>
+      </div>
+    </van-popup>
+
+    <van-popup :show="!!currentAgent" position="bottom" round closeable teleport="body" :style="{ maxHeight: '70%' }" @update:show="(v: boolean) => !v && (openAgentNo = '')">
+      <div v-if="currentAgent" class="px-4 pb-8 pt-5">
+        <div class="flex items-center gap-2">
+          <MBillNo :no="currentAgent.no" class="text-15px font-700" />
+          <MStatusTag :def="AGENT_STATUS[currentAgent.status]" />
+        </div>
+        <div class="mt-2 text-13px text-t2">{{ currentAgent.createdAt }} · 参考金额 <MoneyText :value="currentAgent.referenceAmount" /></div>
+        <div class="mt-3 rounded-12px border border-line">
+          <div v-for="i in currentAgent.items" :key="i.sku" class="flex justify-between border-b border-line px-3 py-2 last:border-0">
+            <span>{{ i.name }}</span>
+            <span class="qs-num font-600">× {{ i.qty }}</span>
+          </div>
+        </div>
+        <van-button block round type="primary" class="mt-4" to="/fulfil?tab=agent">到履约看进度</van-button>
+      </div>
+    </van-popup>
   </div>
 </template>

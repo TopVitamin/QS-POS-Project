@@ -16,6 +16,9 @@ export type AuditAction =
   | '支付查单'
   | '撤销收款'
   | '重复回传'
+  | '店间调拨'
+  | '停接开关'
+  | '门店代发'
 
 export interface AuditLog {
   id: string

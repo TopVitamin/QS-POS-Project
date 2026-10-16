@@ -8,6 +8,7 @@ import type {
   SaleOrder,
   Shift,
   Stocktake,
+  StoreTransfer,
 } from '../../types'
 import { activePromotions, priceCart, type PricingAdjustment, type PricingCoupon } from '../../domain/pricing'
 import { nextBillNo } from '../../domain/numbering'
@@ -109,6 +110,7 @@ function generate(
     discrepancies: [],
     stocktakes: [],
     returnsToWarehouse: [],
+    transfers: [],
     shifts: [],
     dailyCloses: [],
     dues: [],
@@ -605,6 +607,31 @@ function generate(
     ship: at(-2, 1080),
     sign: at(-1, 900),
   })
+  // 门店代发：OMS把代客单路由到另一家店，由该店代发。发起店库存不扣
+  agent({
+    storeId: 's01',
+    at: at(-4, 700),
+    source: 'cashier',
+    guide: 'QS1003',
+    creator: 'QS1003',
+    items: [['SP0201010001', 1]],
+    customer: customers[2],
+    note: '演示：科技园店代发',
+    route: [at(-4, 720), '科技园店'],
+    ship: at(-4, 980),
+    sign: at(-3, 780),
+  })
+  agent({
+    storeId: 's01',
+    at: at(-1, 800),
+    source: 'mobile',
+    guide: 'QS1001',
+    creator: 'QS1001',
+    items: [['SP0201020001', 1]],
+    customer: customers[0],
+    note: '演示：科技园店待代发',
+    route: [at(-1, 820), '科技园店'],
+  })
 
   // ---- 要货、发运、收货 ----
   const replenish = (spec: {
@@ -703,6 +730,85 @@ function generate(
     note: '加盟店要货：区域仓调拨到代销仓，不产生货款',
     review: [at(-3, 960), true, '同意'],
     ship: at(-2, 600),
+  })
+
+  // ---- 店间调拨：调入店提交，中枢审核发运，调入店按出库单收货 ----
+  const transfer = (spec: {
+    from: string
+    to: string
+    at: DateTimeText
+    creator: string
+    lines: [string, number][]
+    note: string
+    review?: [DateTimeText, boolean, string]
+    ship?: DateTimeText
+    receive?: [DateTimeText, string]
+  }) => {
+    let no = ''
+    schedule(spec.at, () => {
+      no = nextBillNo(db.counters, 'transfer', spec.at)
+      const t: StoreTransfer = {
+        no,
+        fromStoreId: spec.from,
+        toStoreId: spec.to,
+        createdAt: spec.at,
+        creatorJobNo: spec.creator,
+        lines: spec.lines.map(([sku, qty]) => ({ sku, name: product(sku).name, spec: product(sku).spec, qty })),
+        note: spec.note,
+        status: 'reviewing',
+        hub: {},
+      }
+      db.transfers.push(t)
+    })
+    if (spec.review) schedule(spec.review[0], () => hub.reviewTransfer(db, no, spec.review![1], spec.review![2], spec.review![0]))
+    if (spec.ship) schedule(spec.ship, () => void hub.shipTransfer(db, no, spec.ship))
+    if (spec.receive) {
+      const [when, operator] = spec.receive
+      schedule(when, () => {
+        const outboundNo = db.transfers.find((t) => t.no === no)!.hub.outboundNo!
+        const shipment = db.shipments.find((s) => s.outboundNo === outboundNo)!
+        const all = Object.fromEntries(shipment.lines.map((l) => [l.sku, l.qty]))
+        hub.postReceipt(db, { outboundNo, received: all, operatorJobNo: operator }, when)
+      })
+    }
+  }
+  transfer({
+    from: 's02',
+    to: 's01',
+    at: at(-6, 700),
+    creator: 'QS1001',
+    lines: [['SP0201010001', 6], ['SP0201030001', 4]],
+    note: '万象天地店向科技园店要线材',
+    review: [at(-6, 920), true, '同意'],
+    ship: at(-5, 580),
+    receive: [at(-4, 700), 'QS1001'],
+  })
+  transfer({
+    from: 's02',
+    to: 's01',
+    at: at(-2, 710),
+    creator: 'QS1001',
+    lines: [['SP0402010002', 3]],
+    note: '无线充电板调拨',
+    review: [at(-2, 980), true, '同意'],
+    ship: at(-1, 620),
+  })
+  transfer({
+    from: 's03',
+    to: 's01',
+    at: at(-1, 740),
+    creator: 'QS1001',
+    lines: [['SP0201020001', 2]],
+    note: '演示跨模式调拨，口径见待确认-26',
+    review: [at(-1, 1000), true, '演示通过'],
+  })
+  transfer({
+    from: 's02',
+    to: 's01',
+    at: hasToday ? todayAt(600) : at(-1, 1280),
+    creator: 'QS1001',
+    lines: [['SP0201010002', 4]],
+    note: '今天新提的调拨，等中枢审核',
   })
 
   // ---- 盘点 ----

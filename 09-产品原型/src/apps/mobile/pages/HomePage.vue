@@ -29,6 +29,7 @@ const ENTRIES: { text: string; icon: string; to: string; perm: Perm; tint: strin
   { text: '收货', icon: 'i-ph-tray-arrow-down-fill', to: '/receive', perm: 'storeops.view', tint: 'bg-[#FDF3E3] text-warn' },
   { text: '盘点', icon: 'i-ph-list-checks-bold', to: '/stocktake', perm: 'storeops.view', tint: 'bg-[#FDF3E3] text-warn' },
   { text: '退仓', icon: 'i-ph-arrow-bend-up-left-bold', to: '/return-wh', perm: 'storeops.view', tint: 'bg-[#FDF3E3] text-warn' },
+  { text: '店间调拨', icon: 'i-ph-arrows-left-right-bold', to: '/transfer', perm: 'storeops.view', tint: 'bg-[#FDF3E3] text-warn' },
   { text: '我的业绩', icon: 'i-ph-chart-line-up-bold', to: '/performance', perm: 'performance.self', tint: 'bg-[#E8F7EE] text-ok' },
   { text: '门店日报', icon: 'i-ph-calendar-check-fill', to: '/daily', perm: 'shift.view', tint: 'bg-[#E8F7EE] text-ok' },
 ]
@@ -43,6 +44,8 @@ const todos = computed(() => {
     { text: '在途待收的出库单', count: t.inTransit, unit: '张', to: '/receive', perm: 'storeops.view' },
     { text: '盘点差异待授权', count: t.stocktakeToPost, unit: '张', to: '/stocktake', perm: 'storeops.view' },
     { text: '要货单在中枢审核', count: t.replenishReviewing, unit: '张', to: '/replenish', perm: 'storeops.view' },
+    { text: '店间调拨待审核', count: t.transfersReviewing, unit: '张', to: '/transfer', perm: 'storeops.view' },
+    { text: '本店待代发', count: t.dropshipsPending, unit: '单', to: '/fulfil?tab=dropship', perm: 'fulfil.view' },
     { text: '收货差异待中枢处理', count: t.discrepancies, unit: '张', to: '/receive', perm: 'storeops.view' },
     { text: '还没交班的班次', count: t.openShifts, unit: '个', to: '/daily', perm: 'shift.view' },
   ]

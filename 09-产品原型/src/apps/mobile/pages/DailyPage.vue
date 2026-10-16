@@ -4,6 +4,7 @@ import { api } from '@/shared/api'
 import MoneyText from '@/shared/components/MoneyText.vue'
 import { useRequest } from '@/shared/composables/useRequest'
 import { DUE_STATUS, PAY_METHOD, PAY_METHODS, SHIFT_STATUS } from '@/shared/config/labels'
+import type { Shift } from '@/shared/types'
 import { payColors } from '@/shared/theme/tokens'
 import { formatMoney } from '@/shared/utils/format'
 import { addDays, shortDate, timeOf, todayBizDate, weekdayOf } from '@/shared/utils/time'
@@ -28,6 +29,7 @@ const methods = computed(() => {
   return PAY_METHODS.map((k) => ({ key: k, ...PAY_METHOD[k], ...m[k], net: m[k].sales - m[k].refunds }))
 })
 const isFranchise = computed(() => day.value?.store.mode === 'franchise')
+const openShift = ref<Shift | null>(null)
 
 const banner = computed(() => {
   const d = day.value
@@ -95,7 +97,7 @@ const banner = computed(() => {
       </Section>
 
       <Section :title="`当日班次 ${day.shifts.length}`">
-        <div v-for="s in day.shifts" :key="s.no" class="flex items-center gap-3 border-t border-line px-4 py-2.5 first:border-0">
+        <div v-for="s in day.shifts" :key="s.no" class="m-press flex items-center gap-3 border-t border-line px-4 py-2.5 first:border-0" @click="openShift = s">
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-1.5 text-13px"><MBillNo :no="s.no" plain /><MStatusTag :def="SHIFT_STATUS[s.status]" /></div>
             <div class="mt-0.5 truncate text-12px text-t3">{{ s.registerNo }}号台 · {{ mobile.who(s.cashierJobNo) }} · {{ timeOf(s.openedAt) }}–{{ s.closedAt ? timeOf(s.closedAt) : '' }}</div>
@@ -134,5 +136,22 @@ const banner = computed(() => {
       日报只读。封账由店长在管理端执行，前置条件是这一营业日的班次都已交班 <MAssumptionTag k="dailyCloser" />；营业日切日 <MAssumptionTag k="bizDay" />。
       日报不是对账文件，营业款和总账在中枢与金蝶
     </Note>
+
+    <van-popup :show="!!openShift" position="bottom" round closeable teleport="body" :style="{ maxHeight: '80%' }" @update:show="(v: boolean) => !v && (openShift = null)">
+      <div v-if="openShift" class="px-4 pb-8 pt-5">
+        <div class="flex items-center gap-2">
+          <MBillNo :no="openShift.no" class="text-15px font-700" />
+          <MStatusTag :def="SHIFT_STATUS[openShift.status]" />
+        </div>
+        <div class="mt-3 text-14px leading-22px text-t2">
+          <div>{{ openShift.registerNo }}号台 · {{ mobile.who(openShift.cashierJobNo) }}</div>
+          <div>{{ timeOf(openShift.openedAt) }}–{{ openShift.closedAt ? timeOf(openShift.closedAt) : '未交班' }}</div>
+          <div>备用金 <MoneyText :value="openShift.float" /></div>
+          <div v-if="openShift.summary">应有现金 <MoneyText :value="openShift.summary.expectedCash" strong /></div>
+          <div v-if="openShift.status === 'closed'">实点现金 <MoneyText :value="openShift.countedCash" /> · 差异 {{ openShift.cashDiff ? formatMoney(openShift.cashDiff, { sign: true }) : '无' }}</div>
+          <div v-if="openShift.diffNote">说明 {{ openShift.diffNote }}</div>
+        </div>
+      </div>
+    </van-popup>
   </div>
 </template>

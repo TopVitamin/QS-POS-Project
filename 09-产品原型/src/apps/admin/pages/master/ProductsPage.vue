@@ -8,7 +8,7 @@ import AssumptionTag from '@/shared/naive/AssumptionTag.vue'
 import PendingTag from '@/shared/naive/PendingTag.vue'
 import type { Category, Product } from '@/shared/types'
 import { codeName } from '@/shared/utils/format'
-import { mono, pagination, two } from '../../components/cells'
+import { clickable, mono, pagination, two } from '../../components/cells'
 import Hint from '../../components/Hint.vue'
 import PageHead from '../../components/PageHead.vue'
 
@@ -48,6 +48,15 @@ const columns: DataTableColumns<Product> = [
   { title: '采集SN', key: 'snRequired', width: 90, render: (p) => (p.snRequired ? h(NTag, { size: 'small', bordered: false, type: 'info' }, () => '需采集') : h('span', { class: 'text-t3' }, '-')) },
   { title: '状态', key: 'status', width: 80, render: (p) => h(NTag, { size: 'small', bordered: false, type: p.status === 'active' ? 'success' : 'default' }, () => (p.status === 'active' ? '在售' : '停用')) },
 ]
+
+const openSku = ref('')
+const current = computed(() => rows.value.find((p) => p.sku === openSku.value) ?? null)
+const show = computed({
+  get: () => !!openSku.value,
+  set: (v) => {
+    if (!v) openSku.value = ''
+  },
+})
 </script>
 
 <template>
@@ -70,7 +79,35 @@ const columns: DataTableColumns<Product> = [
     </Hint>
 
     <div class="qs-card overflow-hidden">
-      <n-data-table :columns="columns" :data="rows" :loading="loading && !products" :pagination="pagination" :row-key="(p: Product) => p.sku" :scroll-x="1100" :bordered="false" />
+      <n-data-table
+        :columns="columns"
+        :data="rows"
+        :loading="loading && !products"
+        :pagination="pagination"
+        :row-key="(p: Product) => p.sku"
+        :row-props="clickable((p: Product) => (openSku = p.sku))"
+        :scroll-x="1100"
+        :bordered="false"
+      />
     </div>
+
+    <n-drawer v-model:show="show" :width="480">
+      <n-drawer-content v-if="current" closable :native-scrollbar="false">
+        <template #header>{{ current.name }}</template>
+        <div class="flex flex-col gap-4 text-14px">
+          <n-descriptions :column="1" label-placement="left" size="small" bordered>
+            <n-descriptions-item label="SKU"><span class="font-mono">{{ current.sku }}</span></n-descriptions-item>
+            <n-descriptions-item label="规格">{{ current.spec }}</n-descriptions-item>
+            <n-descriptions-item label="分类">{{ pathOf(current.categoryCode) }}</n-descriptions-item>
+            <n-descriptions-item label="分类编码"><span class="font-mono">{{ current.categoryCode }}</span></n-descriptions-item>
+            <n-descriptions-item label="条码">{{ current.barcodes.join('、') }}</n-descriptions-item>
+            <n-descriptions-item label="统一零售价（含税）"><MoneyText :value="current.price" unit strong /></n-descriptions-item>
+            <n-descriptions-item label="采集SN">{{ current.snRequired ? '需采集' : '不采集' }}</n-descriptions-item>
+            <n-descriptions-item label="状态">{{ current.status === 'active' ? '在售' : '停用' }}</n-descriptions-item>
+          </n-descriptions>
+          <Hint>主数据由上游下发，POS不回写。成交时保存价格快照，事后改这里不改已成交的单</Hint>
+        </div>
+      </n-drawer-content>
+    </n-drawer>
   </div>
 </template>

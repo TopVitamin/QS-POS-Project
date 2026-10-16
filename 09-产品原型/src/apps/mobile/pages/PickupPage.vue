@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { api, type JudgeResult } from '@/shared/api'
 import MoneyText from '@/shared/components/MoneyText.vue'
 import { useRequest } from '@/shared/composables/useRequest'
@@ -20,6 +20,7 @@ import { useMobile } from '../stores/session'
 
 const mobile = useMobile()
 const router = useRouter()
+const route = useRoute()
 const store = computed(() => mobile.store!)
 
 const { data: pickups } = useRequest(() => api.fulfil.pickups())
@@ -79,6 +80,14 @@ async function confirm() {
     busy.value = false
   }
 }
+
+watch(
+  () => [route.query.code, mobile.ready] as const,
+  ([c, ready]) => {
+    if (ready && typeof c === 'string' && c.trim()) void judge(c)
+  },
+  { immediate: true },
+)
 
 function toAgent() {
   const r = rejected.value

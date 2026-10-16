@@ -6,11 +6,14 @@ import { useRequest } from '@/shared/composables/useRequest'
 import { PICKUP_STATUS, VERIFY_REJECT } from '@/shared/config/labels'
 import { listsCustomer } from '@/shared/config/permissions'
 import AssumptionTag from '@/shared/naive/AssumptionTag.vue'
+import BillNo from '@/shared/naive/BillNo.vue'
 import PendingTag from '@/shared/naive/PendingTag.vue'
+import StatusTag from '@/shared/naive/StatusTag.vue'
+import MoneyText from '@/shared/components/MoneyText.vue'
 import type { PickupOrder, VerificationRecord } from '@/shared/types'
 import { maskCode, maskName, maskPhone } from '@/shared/utils/format'
 import { todayBizDate } from '@/shared/utils/time'
-import { bill, dateTime, link, money, mono, muted, pagination, status, two } from '../../components/cells'
+import { bill, clickable, dateTime, link, money, mono, muted, pagination, status, two } from '../../components/cells'
 import Hint from '../../components/Hint.vue'
 import PageHead from '../../components/PageHead.vue'
 import StoreSelect from '../../components/StoreSelect.vue'
@@ -112,6 +115,22 @@ const resultOptions = [
   { label: '核销成功', value: 'success' },
   { label: '被拒', value: 'rejected' },
 ]
+
+const openOrder = ref<PickupOrder | null>(null)
+const openRecord = ref<VerificationRecord | null>(null)
+const showOrder = computed({
+  get: () => !!openOrder.value,
+  set: (v) => {
+    if (!v) openOrder.value = null
+  },
+})
+const showRecord = computed({
+  get: () => !!openRecord.value,
+  set: (v) => {
+    if (!v) openRecord.value = null
+  },
+})
+const currentOrder = computed(() => (openOrder.value ? (orders.value ?? []).find((o) => o.omsNo === openOrder.value!.omsNo) ?? openOrder.value : null))
 </script>
 
 <template>
@@ -154,6 +173,7 @@ const resultOptions = [
             :loading="loading && !orders"
             :pagination="pagination"
             :row-key="(o: PickupOrder) => o.omsNo"
+            :row-props="clickable((o: PickupOrder) => (openOrder = o))"
             :scroll-x="1720"
             :bordered="false"
           />
@@ -165,6 +185,7 @@ const resultOptions = [
             :loading="loadingRecords && !records"
             :pagination="pagination"
             :row-key="(r: VerificationRecord) => r.id"
+            :row-props="clickable((r: VerificationRecord) => (openRecord = r))"
             :scroll-x="1430"
             :bordered="false"
           />
@@ -172,5 +193,51 @@ const resultOptions = [
       </n-tabs>
     </div>
     <div class="mt-2 text-12px text-t3">提货码只给顾客，还能用的码在后台只露前3位。演示用的完整码在「中枢模拟器」里，那是顾客手机上看到的码</div>
+
+    <n-drawer v-model:show="showOrder" :width="560">
+      <n-drawer-content v-if="currentOrder" closable :native-scrollbar="false">
+        <template #header>
+          <span class="flex items-center gap-2">自提履约单 <BillNo :no="currentOrder.omsNo" /> <StatusTag :def="PICKUP_STATUS[currentOrder.status]" /></span>
+        </template>
+        <div class="flex flex-col gap-4 text-14px">
+          <n-descriptions :column="2" label-placement="left" size="small" bordered>
+            <n-descriptions-item label="自提门店" :span="2">{{ admin.storeText(currentOrder.storeId) }}</n-descriptions-item>
+            <n-descriptions-item label="小程序单号"><span class="font-mono">{{ currentOrder.channelOrderNo }}</span></n-descriptions-item>
+            <n-descriptions-item label="提货码"><span class="font-mono">{{ codeText(currentOrder.pickupCode, currentOrder.omsNo) }}</span></n-descriptions-item>
+            <n-descriptions-item label="锁定"><BillNo :no="currentOrder.lock.lockNo" plain /> · {{ currentOrder.lock.status === 'locked' ? '有效' : '已释放' }}</n-descriptions-item>
+            <n-descriptions-item label="线上已付"><MoneyText :value="currentOrder.paidAmount" strong /></n-descriptions-item>
+            <n-descriptions-item label="顾客">{{ listsCustomer(admin.storeById(currentOrder.storeId)) ? `${maskName(currentOrder.customer.name)} ${maskPhone(currentOrder.customer.phone)}` : '加盟店不展示' }}</n-descriptions-item>
+            <n-descriptions-item label="下发时间"><span class="qs-num">{{ currentOrder.createdAt }}</span></n-descriptions-item>
+            <n-descriptions-item v-if="currentOrder.verificationNo" label="核销单" :span="2">
+              <BillNo :no="currentOrder.verificationNo" /> · {{ admin.who(currentOrder.verifierJobNo) }} {{ currentOrder.verifiedAt }}
+            </n-descriptions-item>
+          </n-descriptions>
+          <div>
+            <div class="mb-1.5 font-600">商品</div>
+            <div v-for="i in currentOrder.items" :key="i.sku" class="flex justify-between border-b border-line py-2 last:border-0">
+              <span>{{ i.name }} <span class="text-t3">{{ i.spec }}</span></span>
+              <span class="qs-num font-600">× {{ i.qty }}</span>
+            </div>
+          </div>
+          <router-link v-if="admin.has('audit.view')" :to="{ name: 'audit-trace', query: { q: currentOrder.omsNo } }" class="text-13px text-brand-700 hover:underline">到交易追溯看整条链</router-link>
+        </div>
+      </n-drawer-content>
+    </n-drawer>
+
+    <n-drawer v-model:show="showRecord" :width="480">
+      <n-drawer-content v-if="openRecord" closable :native-scrollbar="false">
+        <template #header>核销记录</template>
+        <n-descriptions :column="1" label-placement="left" size="small" bordered>
+          <n-descriptions-item label="时间"><span class="qs-num">{{ openRecord.at }}</span></n-descriptions-item>
+          <n-descriptions-item label="门店">{{ admin.storeText(openRecord.storeId) }}</n-descriptions-item>
+          <n-descriptions-item label="结果">{{ openRecord.result === 'success' ? '核销成功' : VERIFY_REJECT[openRecord.reason!].label }}</n-descriptions-item>
+          <n-descriptions-item label="核销单号"><BillNo :no="openRecord.no" plain /></n-descriptions-item>
+          <n-descriptions-item label="提货码"><span class="font-mono">{{ codeText(openRecord.pickupCode, openRecord.omsNo) }}</span></n-descriptions-item>
+          <n-descriptions-item label="OMS履约单"><BillNo :no="openRecord.omsNo" /></n-descriptions-item>
+          <n-descriptions-item label="经办">{{ admin.who(openRecord.operatorJobNo) }}</n-descriptions-item>
+          <n-descriptions-item label="说明">{{ openRecord.result === 'success' ? '中枢扣减本店库存，释放锁定' : VERIFY_REJECT[openRecord.reason!].detail }}</n-descriptions-item>
+        </n-descriptions>
+      </n-drawer-content>
+    </n-drawer>
   </div>
 </template>

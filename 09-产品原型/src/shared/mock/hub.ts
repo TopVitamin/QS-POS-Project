@@ -17,6 +17,7 @@ import type {
   SettlementLine,
   StockRecord,
   Stocktake,
+  StoreTransfer,
   VerificationRecord,
   VerifyRejectReason,
 } from '../types'
@@ -308,14 +309,40 @@ function agentOrder(db: DemoDb, no: string) {
 export function routeAgentOrder(db: DemoDb, no: string, at: DateTimeText = nowText(), nodeName = '深圳主仓') {
   const o = agentOrder(db, no)
   if (o.status !== 'submitted') throw new HubRejection('只有已提交的代客单能路由')
+  const store = db.stores.find((s) => s.name === nodeName || s.id === nodeName)
+  if (store) {
+    if (store.pausedForRouting) throw new HubRejection(`${store.name}已临时停接自提和代发，中枢不会把订单路由过去`)
+    if (store.id === o.storeId) throw new HubRejection('代发节点不能是发起店自己')
+    o.oms.nodeKind = 'store'
+    o.oms.nodeStoreId = store.id
+    o.oms.nodeName = store.name
+  } else {
+    o.oms.nodeKind = 'warehouse'
+    o.oms.nodeName = nodeName
+    o.oms.nodeStoreId = undefined
+  }
   o.status = 'routed'
-  o.oms.nodeName = nodeName
   o.oms.routedAt = at
+  o.oms.rejectNote = undefined
 }
 
-export function shipAgentOrder(db: DemoDb, no: string, at: DateTimeText = nowText()) {
+export function shipAgentOrder(db: DemoDb, no: string, at: DateTimeText = nowText(), operatorJobNo?: string) {
   const o = agentOrder(db, no)
   if (o.status !== 'routed') throw new HubRejection('只有已路由的代客单能发货')
+  if (o.oms.nodeKind === 'store' && o.oms.nodeStoreId) {
+    const check = checkAvailability(db, o.oms.nodeStoreId, o.items)
+    if (!check.ok) throw new HubRejection(`代发门店可用不够：${check.message}`, check.basis, check.shortages)
+    for (const it of o.items) move(db, o.oms.nodeStoreId, it.sku, 'dropship', -it.qty, o.no, at)
+    audit(db, {
+      action: '门店代发',
+      at,
+      operatorJobNo: operatorJobNo ?? o.guideJobNo,
+      storeId: o.oms.nodeStoreId,
+      objectType: '代客单',
+      objectNo: o.no,
+      after: `从${o.oms.nodeName}发货，扣减该店库存`,
+    })
+  }
   const key = `SF#${compactDate(at)}`
   const seq = (db.counters[key] ?? 0) + 1
   db.counters[key] = seq
@@ -323,6 +350,31 @@ export function shipAgentOrder(db: DemoDb, no: string, at: DateTimeText = nowTex
   o.oms.carrier = '顺丰'
   o.oms.trackingNo = `SF${compactDate(at)}${String(seq).padStart(5, '0')}`
   o.oms.shippedAt = at
+  return o
+}
+
+/** 被选为代发节点的门店拒单，OMS改派：单回到已提交，清空节点 */
+export function rejectStoreDropship(db: DemoDb, no: string, operatorJobNo: string, at: DateTimeText = nowText()) {
+  const o = agentOrder(db, no)
+  if (o.status !== 'routed' || o.oms.nodeKind !== 'store') throw new HubRejection('只有路由到门店、尚未发货的代客单能拒单')
+  const from = o.oms.nodeName
+  o.status = 'submitted'
+  o.oms.nodeKind = undefined
+  o.oms.nodeStoreId = undefined
+  o.oms.nodeName = undefined
+  o.oms.routedAt = undefined
+  o.oms.rejectNote = `${from}拒单，OMS改派`
+  audit(db, {
+    action: '门店代发',
+    at,
+    operatorJobNo,
+    storeId: o.storeId,
+    objectType: '代客单',
+    objectNo: o.no,
+    before: from,
+    after: '门店拒单，退回OMS改派',
+  })
+  return o
 }
 
 export function signAgentOrder(db: DemoDb, no: string, at: DateTimeText = nowText()) {
@@ -424,7 +476,52 @@ export function postReceipt(
   shipment.receiptNo = no
   const rep = db.replenishments.find((r) => r.no === shipment.replenishmentNo)
   if (rep) rep.status = 'received'
+  const tr = db.transfers.find((t) => t.no === shipment.transferNo)
+  if (tr) tr.status = 'received'
   return receipt
+}
+
+// ---------- 店间调拨：申请 → 中枢审核发运 → 调入店按出库单收货 ----------
+
+function transferOf(db: DemoDb, no: string): StoreTransfer {
+  const t = db.transfers.find((x) => x.no === no)
+  if (!t) throw new HubRejection('找不到调拨单')
+  return t
+}
+
+export function reviewTransfer(db: DemoDb, no: string, approve: boolean, note: string, at: DateTimeText = nowText()) {
+  const t = transferOf(db, no)
+  if (t.status !== 'reviewing') throw new HubRejection('只有审核中的调拨单能审核')
+  t.status = approve ? 'approved' : 'rejected'
+  t.hub.reviewedAt = at
+  t.hub.reviewNote = note
+}
+
+export function shipTransfer(db: DemoDb, no: string, at: DateTimeText = nowText()): InboundShipment {
+  const t = transferOf(db, no)
+  if (t.status !== 'approved') throw new HubRejection('只有已审核的调拨单能发运')
+  const check = checkAvailability(db, t.fromStoreId, t.lines)
+  if (!check.ok) throw new HubRejection(`调出门店可用不够：${check.message}`, check.basis, check.shortages)
+  const from = db.stores.find((s) => s.id === t.fromStoreId)
+  const outboundNo = nextHubNo(db.counters, 'outbound', at)
+  const shipment: InboundShipment = {
+    outboundNo,
+    storeId: t.toStoreId,
+    sourceNodeName: from?.name ?? t.fromStoreId,
+    transferNo: t.no,
+    lines: t.lines.map((l) => ({ ...l })),
+    shippedAt: at,
+    status: 'in_transit',
+  }
+  for (const l of t.lines) {
+    move(db, t.fromStoreId, l.sku, 'transfer_out', -l.qty, t.no, at)
+    stockRecord(db, t.toStoreId, l.sku).inTransit += l.qty
+  }
+  db.shipments.push(shipment)
+  t.status = 'shipped'
+  t.hub.outboundNo = outboundNo
+  t.hub.shippedAt = at
+  return shipment
 }
 
 // ---------- 盘点：授权后中枢调账 ----------
@@ -592,6 +689,7 @@ export function buildSettlementLines(db: DemoDb, franchiseeId: string, start: Bi
   const storeIds = db.franchisees.find((f) => f.id === franchiseeId)?.storeIds ?? []
   const inPeriod = (t: string) => t.slice(0, 10) >= start && t.slice(0, 10) <= end
   const pickups = db.verifications.filter((v) => storeIds.includes(v.storeId) && v.result === 'success' && inPeriod(v.at)).length
+  const dropships = db.agentOrders.filter((o) => o.oms.nodeKind === 'store' && !!o.oms.nodeStoreId && storeIds.includes(o.oms.nodeStoreId) && o.status !== 'cancelled' && inPeriod(o.createdAt)).length
   const agents = db.agentOrders.filter((o) => storeIds.includes(o.storeId) && inPeriod(o.createdAt)).length
   return [
     { key: 'dues', label: '应缴营业款合计', amount: total, note: `${dues.length}个营业日，中枢按日结生成，按支付方式分开` },
@@ -603,7 +701,7 @@ export function buildSettlementLines(db: DemoDb, franchiseeId: string, start: Bi
       label: '履约佣金',
       amount: null,
       // 履约佣金只算自提核销和门店代发（《11.术语表》）；发起代客单记业绩，跨店时怎么分在【待确认-20】里
-      note: `本期核销自提${pickups}单；门店代发原型未做；另发起代客单${agents}单，记业绩，是否分佣未定。佣金规则未定，不出金额`,
+      note: `本期核销自提${pickups}单；本店代发${dropships}单；另发起代客单${agents}单，记业绩，是否分佣未定。佣金规则未定，不出金额`,
       pending: ['待确认-20'],
     },
     { key: 'loss', label: '盘亏赔偿', amount: null, note: '损耗率、计价和判责未定，不自动生成赔偿金额', pending: ['待确认-23'] },

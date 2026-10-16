@@ -4,7 +4,7 @@ import { useDialog } from 'naive-ui'
 import { api } from '@/shared/api'
 import MoneyText from '@/shared/components/MoneyText.vue'
 import { useRequest } from '@/shared/composables/useRequest'
-import { AGENT_STATUS, REPLENISH_STATUS, RTW_STATUS } from '@/shared/config/labels'
+import { AGENT_STATUS, REPLENISH_STATUS, RTW_STATUS, TRANSFER_STATUS } from '@/shared/config/labels'
 import AssumptionTag from '@/shared/naive/AssumptionTag.vue'
 import BillNo from '@/shared/naive/BillNo.vue'
 import { useFeedback } from '@/shared/naive/feedback'
@@ -71,9 +71,15 @@ const toggleRouting = (storeId: string) =>
 const review = (no: string, approve: boolean) =>
   act(`${approve ? 'ok' : 'rej'}-${no}`, () => hub.reviewReplenishment(no, approve, ''), approve ? '审核通过，调出仓深圳主仓' : '已驳回')
 const shipReplenishment = (no: string) => act(`ship-${no}`, () => hub.shipReplenishment(no), (s) => `已发运，出库单 ${s.outboundNo}，门店在途增加`)
+const reviewTransfer = (no: string, approve: boolean) =>
+  act(`${approve ? 'tok' : 'trej'}-${no}`, () => hub.reviewTransfer(no, approve, ''), approve ? '调拨审核通过' : '调拨已驳回')
+const shipTransfer = (no: string) => act(`tship-${no}`, () => hub.shipTransfer(no), (s) => `已发运，出库单 ${s.outboundNo}，调出店账面已扣、调入店在途增加`)
 
 const routeTo = ref<Record<string, string>>({})
-const nodeOptions = computed(() => (ov.value?.nodes ?? []).map((n) => ({ label: codeName(n.code, n.name), value: n.name })))
+const nodeOptions = computed(() => [
+  ...(ov.value?.nodes ?? []).map((n) => ({ label: `${codeName(n.code, n.name)}（区域仓）`, value: n.name })),
+  ...(ov.value?.stores ?? []).map((s) => ({ label: `${s.name}（门店代发）`, value: s.name })),
+])
 const nodeOf = (no: string) => routeTo.value[no] ?? '深圳主仓'
 const routeAgent = (no: string) => act(`rt-${no}`, () => hub.routeAgent(no, nodeOf(no)), `OMS已路由到${nodeOf(no)}`)
 const shipAgent = (no: string) => act(`sp-${no}`, () => hub.shipAgent(no), 'WMS已拣发，承运商顺丰')
@@ -217,6 +223,24 @@ function reset() {
         </n-card>
 
         <n-card size="small">
+          <template #header>店间调拨 <span class="qs-num text-t3">{{ ov.transfers.length }}</span></template>
+          <template #header-extra><AssumptionTag k="storeTransfer" /></template>
+          <div v-for="t in ov.transfers" :key="t.no" class="flex items-center gap-3 border-b border-line py-2.5 last:border-0">
+            <div class="min-w-0 flex-1 leading-tight">
+              <div class="flex items-center gap-2 text-13px"><BillNo :no="t.no" plain /><StatusTag :def="TRANSFER_STATUS[t.status]" /></div>
+              <div class="mt-0.5 truncate text-12px text-t3">{{ storeName(t.fromStoreId) }} → {{ storeName(t.toStoreId) }} · {{ linesText(t.lines) }}</div>
+            </div>
+            <template v-if="t.status === 'reviewing'">
+              <n-button size="small" :loading="busy === `trej-${t.no}`" @click="reviewTransfer(t.no, false)">驳回</n-button>
+              <n-button size="small" type="primary" :loading="busy === `tok-${t.no}`" @click="reviewTransfer(t.no, true)">通过</n-button>
+            </template>
+            <n-button v-else size="small" type="primary" secondary :loading="busy === `tship-${t.no}`" @click="shipTransfer(t.no)">调出店发运</n-button>
+          </div>
+          <div v-if="!ov.transfers.length" class="py-3 text-center text-13px text-t3">没有待审核或待发运的调拨单</div>
+          <div class="mt-2 text-12px text-t3">发运时扣调出店账面、计入调入店在途。是否允许跨模式 <PendingTag id="待确认-26" /></div>
+        </n-card>
+
+        <n-card size="small">
           <template #header>代客单履约 <span class="qs-num text-t3">{{ ov.agentOrders.length }}</span></template>
           <template #header-extra><span class="flex gap-1.5"><AssumptionTag k="regionalNodes" /><AssumptionTag k="carrier" /></span></template>
           <div v-for="o in ov.agentOrders" :key="o.no" class="flex items-center gap-3 border-b border-line py-2.5 last:border-0">
@@ -228,11 +252,11 @@ function reset() {
               <n-select :value="nodeOf(o.no)" :options="nodeOptions" size="small" class="!w-170px" @update:value="(v: string) => (routeTo[o.no] = v)" />
               <n-button size="small" type="primary" :loading="busy === `rt-${o.no}`" @click="routeAgent(o.no)">OMS路由</n-button>
             </template>
-            <n-button v-else-if="o.status === 'routed'" size="small" type="primary" secondary :loading="busy === `sp-${o.no}`" @click="shipAgent(o.no)">拣发</n-button>
+            <n-button v-else-if="o.status === 'routed'" size="small" type="primary" secondary :loading="busy === `sp-${o.no}`" @click="shipAgent(o.no)">{{ o.oms.nodeKind === 'store' ? '代发店发货' : '拣发' }}</n-button>
             <n-button v-else size="small" secondary :loading="busy === `sg-${o.no}`" @click="signAgent(o.no)">签收</n-button>
           </div>
           <div v-if="!ov.agentOrders.length" class="py-3 text-center text-13px text-t3">没有在途的代客单</div>
-          <div class="mt-2 text-12px text-t3">POS不选仓、不选承运商；区域仓发货不扣发起店的库存（《4.全局业务规则》§二）。原型只路由到区域仓，门店被OMS选为发货店的代发还没做</div>
+          <div class="mt-2 text-12px text-t3">POS不选仓、不选承运商。路由到区域仓时不扣发起店库存；路由到门店时代发店发货才扣该店库存（《4.全局业务规则》§二）。门店拒单后OMS改派</div>
         </n-card>
 
         <n-card size="small">

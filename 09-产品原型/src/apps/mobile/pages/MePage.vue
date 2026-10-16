@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { showConfirmDialog } from 'vant'
 import { api } from '@/shared/api'
 import { useRequest } from '@/shared/composables/useRequest'
@@ -9,7 +9,7 @@ import type { Duty } from '@/shared/types'
 import MStatusTag from '../components/MStatusTag.vue'
 import Note from '../components/Note.vue'
 import Section from '../components/Section.vue'
-import { alertFail, toastOk } from '../feedback'
+import { alertFail, run, toastOk } from '../feedback'
 import { useMobile } from '../stores/session'
 
 const mobile = useMobile()
@@ -27,6 +27,16 @@ function switchTo(jobNo: string) {
   if (jobNo === mobile.user?.jobNo) return
   mobile.switchTo(jobNo)
   toastOk(`已切换为 ${mobile.who(jobNo)}`)
+}
+
+const pauseBusy = ref(false)
+async function togglePause(on: boolean) {
+  pauseBusy.value = true
+  await run(
+    () => api.storeops.setRoutingPause({ storeId: mobile.storeId, paused: !on, operatorJobNo: mobile.user!.jobNo }),
+    (s) => (s.pausedForRouting ? '已临时停接自提和代发' : '已恢复接单'),
+  )
+  pauseBusy.value = false
 }
 
 async function reset() {
@@ -63,6 +73,13 @@ async function reset() {
         <span class="i-ph-storefront-fill text-15px text-brand-600" />
         <span class="min-w-0 flex-1 truncate">{{ mobile.storeText }}</span>
         <MStatusTag v-if="mobile.store" :def="STORE_MODE[mobile.store.mode]" />
+      </div>
+      <div v-if="mobile.has('storeops.manage') && mobile.store" class="mt-3 flex items-center justify-between rounded-10px border border-line px-3 py-2.5">
+        <div class="min-w-0 pr-3">
+          <div class="text-14px font-600">接自提和代发</div>
+          <div class="text-12px text-t3">盘点或停业时临时停接，不改合同上的「参与路由」</div>
+        </div>
+        <van-switch :model-value="!mobile.store.pausedForRouting" :loading="pauseBusy" size="22px" @update:model-value="togglePause" />
       </div>
       <div class="mt-3 flex flex-col gap-1.5">
         <div v-for="d in mobile.user.duties" :key="d" class="flex gap-2 text-12px leading-18px">

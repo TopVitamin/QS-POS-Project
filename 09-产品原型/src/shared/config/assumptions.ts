@@ -144,6 +144,12 @@ export const ASSUMPTIONS = {
     value: '演示结算单取今天之前的7个营业日，只为展示版式',
     pending: ['待确认-19'],
   },
+  storeTransfer: {
+    key: 'storeTransfer',
+    title: '店间调拨范围',
+    value: '演示允许任意两家演示门店走单据调拨，不代表已确认允许跨模式或跨加盟商；没有单据的调货不改任何一边的可用量',
+    pending: ['待确认-26'],
+  },
 } satisfies Record<string, Assumption>
 
 export type AssumptionKey = keyof typeof ASSUMPTIONS

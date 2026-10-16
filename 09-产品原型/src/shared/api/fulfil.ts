@@ -109,13 +109,42 @@ export function agentOrders(f: { storeIds?: string[]; status?: AgentOrder['statu
     db.agentOrders
       .filter(
         (o) =>
-          inStores(f.storeIds)(o) &&
+          (!f.storeIds || f.storeIds.includes(o.storeId) || (!!o.oms.nodeStoreId && f.storeIds.includes(o.oms.nodeStoreId))) &&
           (!f.status || o.status === f.status) &&
           (!f.bizDate || o.createdAt.startsWith(f.bizDate)) &&
           (!f.guideJobNo || o.guideJobNo === f.guideJobNo),
       )
       .sort(byTimeDesc((o) => o.createdAt)),
   )
+}
+
+/** 路由到本店、由本店代发的代客单（发起店可能是别家） */
+export function inboundDropships(f: { storeIds: string[] }) {
+  return query((db) =>
+    db.agentOrders
+      .filter((o) => o.oms.nodeKind === 'store' && !!o.oms.nodeStoreId && f.storeIds.includes(o.oms.nodeStoreId) && o.status !== 'cancelled')
+      .sort(byTimeDesc((o) => o.createdAt)),
+  )
+}
+
+export function shipStoreDropship(input: { no: string; operatorJobNo: string }) {
+  return command((db) => {
+    const o = db.agentOrders.find((x) => x.no === input.no)
+    if (!o) fail('找不到代客单')
+    if (o.oms.nodeKind !== 'store' || !o.oms.nodeStoreId) fail('这张单不是门店代发')
+    requirePerm(db, input.operatorJobNo, 'storeops.manage', o.oms.nodeStoreId)
+    return hub.shipAgentOrder(db, o.no, nowText(), input.operatorJobNo)
+  })
+}
+
+export function rejectStoreDropship(input: { no: string; operatorJobNo: string }) {
+  return command((db) => {
+    const o = db.agentOrders.find((x) => x.no === input.no)
+    if (!o) fail('找不到代客单')
+    if (o.oms.nodeKind !== 'store' || !o.oms.nodeStoreId) fail('这张单不是门店代发')
+    requirePerm(db, input.operatorJobNo, 'storeops.manage', o.oms.nodeStoreId)
+    return hub.rejectStoreDropship(db, o.no, input.operatorJobNo)
+  })
 }
 
 export const AGENT_BASIS = BASIS.agent

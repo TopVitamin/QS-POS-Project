@@ -65,6 +65,8 @@ export function dashboard(input: { storeIds: string[]; bizDate?: BizDate }) {
       inTransit: db.shipments.filter((s) => inScope(s) && s.status === 'in_transit').length,
       stocktakeToPost: db.stocktakes.filter((s) => inScope(s) && s.status === 'submitted').length,
       replenishReviewing: db.replenishments.filter((r) => inScope(r) && r.status === 'reviewing').length,
+      transfersReviewing: db.transfers.filter((t) => (input.storeIds.includes(t.fromStoreId) || input.storeIds.includes(t.toStoreId)) && t.status === 'reviewing').length,
+      dropshipsPending: db.agentOrders.filter((o) => o.oms.nodeKind === 'store' && o.status === 'routed' && !!o.oms.nodeStoreId && input.storeIds.includes(o.oms.nodeStoreId)).length,
       discrepancies: db.discrepancies.filter((d) => inScope(d) && d.status === 'submitted').length,
       openShifts: db.shifts.filter((s) => inScope(s) && s.status === 'open').length,
       unclosedDays,

@@ -38,7 +38,7 @@ const show = computed({
 const shipmentColumns: DataTableColumns<InboundShipment> = [
   { title: '调拨出库单（中枢）', key: 'outboundNo', width: 240, fixed: 'left', render: (s) => two(bill(s.outboundNo), admin.storeText(s.storeId)) },
   { title: '调出仓', key: 'source', width: 110, render: (s) => s.sourceNodeName },
-  { title: '来源要货单', key: 'rep', width: 230, render: (s) => (s.replenishmentNo ? bill(s.replenishmentNo) : muted('-')) },
+  { title: '来源单据', key: 'rep', width: 230, render: (s) => (s.replenishmentNo ? two(bill(s.replenishmentNo), '要货') : s.transferNo ? two(bill(s.transferNo), '店间调拨') : muted('-')) },
   { title: '商品', key: 'lines', minWidth: 220, ellipsis: { tooltip: true }, render: (s) => two(s.lines.map((l) => `${l.name}×${l.qty}`).join('、'), `${sum(s.lines.map((l) => l.qty))}件`) },
   { title: '发运时间', key: 'shippedAt', width: 170, render: (s) => dateTime(s.shippedAt) },
   { title: '收货单', key: 'receiptNo', width: 230, render: (s) => (s.receiptNo ? bill(s.receiptNo) : muted('未收货')) },
@@ -148,7 +148,9 @@ const rows = computed(() =>
             <n-descriptions-item label="调出仓">{{ detail.shipment.sourceNodeName }}</n-descriptions-item>
             <n-descriptions-item label="状态"><StatusTag :def="SHIPMENT_STATUS[detail.shipment.status]" /></n-descriptions-item>
             <n-descriptions-item label="发运时间"><span class="qs-num">{{ detail.shipment.shippedAt }}</span></n-descriptions-item>
-            <n-descriptions-item label="来源要货单"><BillNo :no="detail.shipment.replenishmentNo" plain /></n-descriptions-item>
+            <n-descriptions-item :label="detail.shipment.transferNo ? '来源调拨单' : '来源要货单'">
+              <BillNo :no="detail.shipment.transferNo || detail.shipment.replenishmentNo" plain />
+            </n-descriptions-item>
             <n-descriptions-item label="收货单"><BillNo :no="detail.receipt?.no" plain /></n-descriptions-item>
             <n-descriptions-item label="收货人">{{ admin.who(detail.receipt?.operatorJobNo) }}</n-descriptions-item>
           </n-descriptions>

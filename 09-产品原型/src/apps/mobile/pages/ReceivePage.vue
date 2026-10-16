@@ -37,7 +37,7 @@ const count = (s: 'in_transit' | 'received') => (shipments.value ?? []).filter((
       </div>
       <div class="mt-1.5 text-14px">{{ s.lines.map((l) => `${l.name}×${l.qty}`).join('、') }}</div>
       <div class="mt-1 flex items-center text-12px text-t3">
-        <span class="flex-1">{{ s.sourceNodeName }} · {{ shortDate(s.shippedAt) }} {{ timeOf(s.shippedAt) }} 发运<template v-if="s.replenishmentNo"> · 要货单 <MBillNo :no="s.replenishmentNo" plain /></template></span>
+        <span class="flex-1">{{ s.sourceNodeName }} · {{ shortDate(s.shippedAt) }} {{ timeOf(s.shippedAt) }} 发运<template v-if="s.replenishmentNo"> · 要货单 <MBillNo :no="s.replenishmentNo" plain /></template><template v-else-if="s.transferNo"> · 调拨单 <MBillNo :no="s.transferNo" plain /></template></span>
         <span v-if="s.status === 'in_transit' && mobile.has('storeops.manage')" class="text-brand-700">去收货</span>
         <span class="i-ph-caret-right" />
       </div>
@@ -45,7 +45,7 @@ const count = (s: 'in_transit' | 'received') => (shipments.value ?? []).filter((
     <van-empty v-if="!shown.length" image-size="80" :description="tab === 'in_transit' ? '没有在途待收的出库单' : '还没有收货记录'" />
 
     <Section v-if="discrepancies?.length" title="收货差异单" desc="实收和出库不一致时另记，交中枢处理">
-      <div v-for="d in discrepancies" :key="d.no" class="border-t border-line px-4 py-2.5 first:border-0">
+      <router-link v-for="d in discrepancies" :key="d.no" :to="`/receive/${d.outboundNo}`" class="m-press block border-t border-line px-4 py-2.5 first:border-0">
         <div class="flex items-center gap-2 text-13px">
           <MBillNo :no="d.no" plain />
           <div class="flex-1" />
@@ -55,7 +55,7 @@ const count = (s: 'in_transit' | 'received') => (shipments.value ?? []).filter((
           <template v-for="l in d.lines" :key="l.sku">{{ l.name }} <span :class="l.diff < 0 ? 'text-bad' : 'text-ok'" class="qs-num font-600">{{ l.diff > 0 ? '+' : '' }}{{ l.diff }}</span>　</template>
         </div>
         <div class="text-12px text-t3">出库单 <MBillNo :no="d.outboundNo" plain /> · {{ shortDate(d.createdAt) }} {{ timeOf(d.createdAt) }}</div>
-      </div>
+      </router-link>
     </Section>
 
     <Note>

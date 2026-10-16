@@ -5,12 +5,14 @@ import { api } from '@/shared/api'
 import MoneyText from '@/shared/components/MoneyText.vue'
 import { useRequest } from '@/shared/composables/useRequest'
 import { DUE_STATUS, PAY_METHOD, PAY_METHODS } from '@/shared/config/labels'
+import BillNo from '@/shared/naive/BillNo.vue'
 import PendingTag from '@/shared/naive/PendingTag.vue'
+import StatusTag from '@/shared/naive/StatusTag.vue'
 import { payColors } from '@/shared/theme/tokens'
 import type { FranchiseDue } from '@/shared/types'
 import { codeName } from '@/shared/utils/format'
 import { addDays, todayBizDate, weekdayOf } from '@/shared/utils/time'
-import { bill, dateTime, money, muted, pagination, status, two } from '../../components/cells'
+import { bill, clickable, dateTime, money, muted, pagination, status, two } from '../../components/cells'
 import Hint from '../../components/Hint.vue'
 import PageHead from '../../components/PageHead.vue'
 import StoreSelect from '../../components/StoreSelect.vue'
@@ -57,6 +59,15 @@ const columns: DataTableColumns<FranchiseDue> = [
 ]
 const statusOptions = Object.entries(DUE_STATUS).map(([value, d]) => ({ label: d.label, value }))
 const franchiseeOptions = computed(() => admin.scopedFranchisees.map((f) => ({ label: codeName(f.code, f.name), value: f.id })))
+
+const openNo = ref('')
+const current = computed(() => (data.value ?? []).find((d) => d.no === openNo.value) ?? null)
+const show = computed({
+  get: () => !!openNo.value,
+  set: (v) => {
+    if (!v) openNo.value = ''
+  },
+})
 </script>
 
 <template>
@@ -109,10 +120,41 @@ const franchiseeOptions = computed(() => admin.scopedFranchisees.map((f) => ({ l
           :loading="loading && !data"
           :pagination="pagination"
           :row-key="(d: FranchiseDue) => d.no"
+          :row-props="clickable((d: FranchiseDue) => (openNo = d.no))"
           :scroll-x="1660"
           :bordered="false"
         />
       </div>
     </template>
+
+    <n-drawer v-model:show="show" :width="520">
+      <n-drawer-content v-if="current" closable :native-scrollbar="false">
+        <template #header>
+          <span class="flex items-center gap-2">应缴 <BillNo :no="current.no" /> <StatusTag :def="DUE_STATUS[current.status]" /></span>
+        </template>
+        <div class="flex flex-col gap-4 text-14px">
+          <n-descriptions :column="1" label-placement="left" size="small" bordered>
+            <n-descriptions-item label="加盟商">{{ admin.franchiseeText(current.franchiseeId) }}</n-descriptions-item>
+            <n-descriptions-item label="门店">{{ admin.storeText(current.storeId) }}</n-descriptions-item>
+            <n-descriptions-item label="营业日"><span class="qs-num">{{ current.bizDate }} {{ weekdayOf(current.bizDate) }}</span></n-descriptions-item>
+            <n-descriptions-item label="日结单"><BillNo :no="current.dailyCloseNo" plain /></n-descriptions-item>
+            <n-descriptions-item label="生成时间"><span class="qs-num">{{ current.generatedAt }}</span></n-descriptions-item>
+            <n-descriptions-item label="缴款">{{ current.remittanceNo ? '已登记' : '待缴' }}</n-descriptions-item>
+          </n-descriptions>
+          <div>
+            <div class="mb-1.5 font-600">按支付方式</div>
+            <div v-for="m in PAY_METHODS" :key="m" class="flex items-center justify-between border-b border-line py-2 last:border-0">
+              <span class="flex items-center gap-2"><span class="h-8px w-8px rounded-full" :style="{ background: payColors[m] }" />{{ PAY_METHOD[m].label }}</span>
+              <MoneyText :value="current.byMethod[m]" />
+            </div>
+            <div class="flex justify-between pt-2 font-600">
+              <span>应缴合计</span>
+              <MoneyText :value="current.total" strong />
+            </div>
+          </div>
+          <Hint>POS只读，不在店里改应缴金额。只含本店向顾客收的钱，不含线上已付款的自提</Hint>
+        </div>
+      </n-drawer-content>
+    </n-drawer>
   </div>
 </template>

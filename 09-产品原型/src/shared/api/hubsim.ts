@@ -15,6 +15,7 @@ export function overview() {
     pickups: db.pickups.filter((p) => p.status === 'pending').sort(byTimeDesc((p) => p.createdAt)),
     agentOrders: db.agentOrders.filter((o) => o.status !== 'signed' && o.status !== 'cancelled').sort(byTimeDesc((o) => o.createdAt)),
     replenishments: db.replenishments.filter((r) => r.status === 'reviewing' || r.status === 'approved').sort(byTimeDesc((r) => r.createdAt)),
+    transfers: db.transfers.filter((t) => t.status === 'reviewing' || t.status === 'approved').sort(byTimeDesc((t) => t.createdAt)),
     rtws: db.returnsToWarehouse.filter((r) => r.status !== 'shipped').sort(byTimeDesc((r) => r.createdAt)),
     remittances: db.remittances.filter((r) => r.status === 'pending').sort(byTimeDesc((r) => r.registeredAt)),
     discrepancies: db.discrepancies.filter((d) => d.status === 'submitted').sort(byTimeDesc((d) => d.createdAt)),
@@ -69,6 +70,14 @@ export function reviewReplenishment(no: string, approve: boolean, note: string) 
 
 export function shipReplenishment(no: string) {
   return command((db) => hub.shipReplenishment(db, no))
+}
+
+export function reviewTransfer(no: string, approve: boolean, note: string) {
+  return command((db) => hub.reviewTransfer(db, no, approve, note || (approve ? '演示：中枢审核通过' : '演示：中枢驳回')))
+}
+
+export function shipTransfer(no: string) {
+  return command((db) => hub.shipTransfer(db, no))
 }
 
 export function routeAgent(no: string, nodeName: string) {

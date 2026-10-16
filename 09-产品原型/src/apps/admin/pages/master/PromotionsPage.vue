@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, h } from 'vue'
+import { computed, h, ref } from 'vue'
 import { NTag, type DataTableColumns } from 'naive-ui'
 import { api } from '@/shared/api'
 import { useRequest } from '@/shared/composables/useRequest'
@@ -8,7 +8,7 @@ import AssumptionTag from '@/shared/naive/AssumptionTag.vue'
 import PendingTag from '@/shared/naive/PendingTag.vue'
 import type { CouponTemplate, Promotion } from '@/shared/types'
 import { formatMoney } from '@/shared/utils/format'
-import { money, mono, two } from '../../components/cells'
+import { clickable, money, mono, two } from '../../components/cells'
 import Hint from '../../components/Hint.vue'
 import PageHead from '../../components/PageHead.vue'
 import { useAdmin } from '../../stores/session'
@@ -52,6 +52,21 @@ const couponColumns: DataTableColumns<CouponTemplate> = [
   { title: '门槛', key: 'threshold', width: 140, render: (c) => (c.threshold ? `满${formatMoney(c.threshold)}可用` : '无门槛') },
   { title: '面额', key: 'amount', width: 120, align: 'right', render: (c) => money(c.amount, { tone: 'promo', strong: true }) },
 ]
+
+const openPromo = ref<Promotion | null>(null)
+const openCoupon = ref<CouponTemplate | null>(null)
+const showPromo = computed({
+  get: () => !!openPromo.value,
+  set: (v) => {
+    if (!v) openPromo.value = null
+  },
+})
+const showCoupon = computed({
+  get: () => !!openCoupon.value,
+  set: (v) => {
+    if (!v) openCoupon.value = null
+  },
+})
 </script>
 
 <template>
@@ -66,7 +81,15 @@ const couponColumns: DataTableColumns<CouponTemplate> = [
     </Hint>
 
     <div class="qs-card mb-6 overflow-hidden">
-      <n-data-table :columns="columns" :data="rows" :loading="loading && !promotions" :row-key="(p: Promotion) => p.id" :scroll-x="1240" :bordered="false" />
+      <n-data-table
+        :columns="columns"
+        :data="rows"
+        :loading="loading && !promotions"
+        :row-key="(p: Promotion) => p.id"
+        :row-props="clickable((p: Promotion) => (openPromo = p))"
+        :scroll-x="1240"
+        :bordered="false"
+      />
     </div>
 
     <div class="mb-3 flex items-center gap-2">
@@ -75,7 +98,41 @@ const couponColumns: DataTableColumns<CouponTemplate> = [
       <PendingTag id="待确认-54" />
     </div>
     <div class="qs-card max-w-720px overflow-hidden">
-      <n-data-table :columns="couponColumns" :data="coupons ?? []" :row-key="(c: CouponTemplate) => c.id" :bordered="false" />
+      <n-data-table
+        :columns="couponColumns"
+        :data="coupons ?? []"
+        :row-key="(c: CouponTemplate) => c.id"
+        :row-props="clickable((c: CouponTemplate) => (openCoupon = c))"
+        :bordered="false"
+      />
     </div>
+
+    <n-drawer v-model:show="showPromo" :width="520">
+      <n-drawer-content v-if="openPromo" closable :native-scrollbar="false">
+        <template #header>{{ openPromo.name }}</template>
+        <n-descriptions :column="1" label-placement="left" size="small" bordered>
+          <n-descriptions-item label="编码"><span class="font-mono">{{ openPromo.code }}</span></n-descriptions-item>
+          <n-descriptions-item label="类型">{{ PROMO_TYPE[openPromo.type] }}</n-descriptions-item>
+          <n-descriptions-item label="规则">{{ ruleText(openPromo) }}</n-descriptions-item>
+          <n-descriptions-item label="参与商品">{{ scopeText(openPromo) }}</n-descriptions-item>
+          <n-descriptions-item label="门店">{{ storesText(openPromo) }}</n-descriptions-item>
+          <n-descriptions-item label="有效期"><span class="qs-num">{{ openPromo.startAt }} 至 {{ openPromo.endAt }}</span></n-descriptions-item>
+          <n-descriptions-item label="状态">{{ openPromo.status === 'active' ? '进行中' : '已结束' }}</n-descriptions-item>
+        </n-descriptions>
+        <Hint class="mt-4">成交时保存命中的促销快照，POS不维护第二套规则。类型和叠加 <PendingTag id="待确认-53" /></Hint>
+      </n-drawer-content>
+    </n-drawer>
+
+    <n-drawer v-model:show="showCoupon" :width="420">
+      <n-drawer-content v-if="openCoupon" closable :native-scrollbar="false">
+        <template #header>{{ openCoupon.name }}</template>
+        <n-descriptions :column="1" label-placement="left" size="small" bordered>
+          <n-descriptions-item label="券ID"><span class="font-mono">{{ openCoupon.id }}</span></n-descriptions-item>
+          <n-descriptions-item label="门槛">{{ openCoupon.threshold ? `满${formatMoney(openCoupon.threshold)}可用` : '无门槛' }}</n-descriptions-item>
+          <n-descriptions-item label="面额"><span class="text-promo-600 font-700">{{ formatMoney(openCoupon.amount) }}</span></n-descriptions-item>
+        </n-descriptions>
+        <Hint class="mt-4">会员券下发到店。积分规则 <PendingTag id="待确认-54" /></Hint>
+      </n-drawer-content>
+    </n-drawer>
   </div>
 </template>

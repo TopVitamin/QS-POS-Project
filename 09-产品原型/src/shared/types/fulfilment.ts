@@ -75,10 +75,14 @@ export interface AgentOrder {
   oms: {
     omsNo?: string
     nodeName?: string
+    /** warehouse 区域仓；store 被选为代发的门店。POS不选节点 */
+    nodeKind?: 'warehouse' | 'store'
+    nodeStoreId?: string
     carrier?: string
     trackingNo?: string
     routedAt?: DateTimeText
     shippedAt?: DateTimeText
     signedAt?: DateTimeText
+    rejectNote?: string
   }
 }

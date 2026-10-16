@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { api } from '@/shared/api'
 import { useRequest } from '@/shared/composables/useRequest'
 import { RTW_REASONS, RTW_STATUS } from '@/shared/config/labels'
+import type { ReturnToWarehouse } from '@/shared/types'
 import { shortDate, timeOf } from '@/shared/utils/time'
 import MBillNo from '../components/MBillNo.vue'
 import MStatusTag from '../components/MStatusTag.vue'
@@ -14,6 +15,8 @@ import { useMobile } from '../stores/session'
 
 const mobile = useMobile()
 const { data: rows } = useRequest(() => api.storeops.rtws({ storeIds: [mobile.storeId] }))
+const open = ref<ReturnToWarehouse | null>(null)
+const current = computed(() => (open.value ? (rows.value ?? []).find((r) => r.no === open.value!.no) ?? open.value : null))
 const { data: products } = useRequest(() => api.master.products(), { live: false })
 const { data: stock } = useRequest(() => api.stock.list([mobile.storeId]))
 const availOf = (sku: string) => stock.value?.find((r) => r.sku === sku)?.available ?? 0
@@ -51,7 +54,7 @@ async function submit() {
       <van-button block round type="primary" icon="plus" @click="showNew = true">新建退仓单</van-button>
     </div>
 
-    <div v-for="r in rows ?? []" :key="r.no" class="mx-3 mt-3 rounded-14px bg-white px-4 py-3 shadow-card">
+    <div v-for="r in rows ?? []" :key="r.no" class="m-press mx-3 mt-3 rounded-14px bg-white px-4 py-3 shadow-card" @click="open = r">
       <div class="flex items-center gap-2">
         <MBillNo :no="r.no" class="text-13px font-600" />
         <span class="rounded-4px bg-subtle px-1 text-11px text-t2">{{ r.reason }}</span>
@@ -73,6 +76,29 @@ async function submit() {
       退仓是门店把货退回区域仓。加盟店的残次、滞销、质量件也走退仓，只转移库存位置，不因退仓把货款退给加盟商（《7.直营与加盟代销模式说明》§2.1）。
       原型提交时只校验本店可用，交运时才扣减账面；同意和交运在管理端「中枢模拟器」里推进。原因选项是演示枚举
     </Note>
+
+    <van-popup :show="!!current" position="bottom" round closeable teleport="body" :style="{ maxHeight: '80%' }" @update:show="(v: boolean) => !v && (open = null)">
+      <div v-if="current" class="px-4 pb-8 pt-5">
+        <div class="flex items-center gap-2">
+          <MBillNo :no="current.no" class="text-15px font-700" />
+          <span class="rounded-4px bg-subtle px-1 text-11px text-t2">{{ current.reason }}</span>
+          <MStatusTag :def="RTW_STATUS[current.status]" />
+        </div>
+        <div class="mt-3 text-14px leading-22px text-t2">
+          <div>{{ mobile.who(current.creatorJobNo) }} {{ shortDate(current.createdAt) }} {{ timeOf(current.createdAt) }} 提交</div>
+          <div v-if="current.hub.approvedAt">中枢同意，退往{{ current.hub.targetNodeName ?? '-' }}</div>
+          <div v-else>等中枢同意并指定退往的仓</div>
+          <div v-if="current.hub.shippedAt">已交运，本店账面已扣减</div>
+          <div v-else-if="current.status === 'approved'">交运时才扣减本店账面</div>
+        </div>
+        <div class="mt-3 rounded-12px border border-line">
+          <div v-for="l in current.lines" :key="l.sku" class="flex justify-between border-b border-line px-3 py-2 last:border-0">
+            <span>{{ l.name }} <span class="text-12px text-t3">{{ l.spec }}</span></span>
+            <span class="qs-num font-600">× {{ l.qty }}</span>
+          </div>
+        </div>
+      </div>
+    </van-popup>
 
     <van-popup v-model:show="showNew" position="bottom" round closeable teleport="body" :style="{ maxHeight: '88%' }">
       <div class="flex max-h-[88vh] flex-col">

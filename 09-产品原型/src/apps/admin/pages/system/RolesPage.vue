@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { DUTY } from '@/shared/config/labels'
 import { canEnter, DUTY_ORDER, END_DUTIES, END_LABEL, LEVEL_TEXT, MATRIX, scopeFranchiseeIds, scopeStoreIds, type AppEnd, type Level } from '@/shared/config/permissions'
 import { useFeedback } from '@/shared/naive/feedback'
@@ -47,6 +47,11 @@ function scopeText(e: SessionUser) {
   return parts.join('；')
 }
 const accounts = computed(() => (admin.employees ?? []).filter((e) => e.active))
+const pickDuty = ref<Duty | null>(null)
+const shownAccounts = computed(() => (pickDuty.value ? accounts.value.filter((e) => e.duties.includes(pickDuty.value!)) : accounts.value))
+function toggleDuty(d: Duty) {
+  pickDuty.value = pickDuty.value === d ? null : d
+}
 
 function switchTo(e: SessionUser) {
   admin.switchTo(e.jobNo)
@@ -61,7 +66,13 @@ function switchTo(e: SessionUser) {
     </PageHead>
 
     <div class="mb-4 grid grid-cols-4 gap-3">
-      <div v-for="d in DUTY_ORDER" :key="d" class="qs-card px-4 py-3" :class="mine.has(d) ? 'ring-2 ring-brand-600' : ''">
+      <div
+        v-for="d in DUTY_ORDER"
+        :key="d"
+        class="qs-card cursor-pointer px-4 py-3"
+        :class="pickDuty === d ? 'ring-2 ring-brand-600' : mine.has(d) ? 'ring-1 ring-brand-200' : ''"
+        @click="toggleDuty(d)"
+      >
         <div class="flex items-center gap-2">
           <span class="text-15px font-700">{{ DUTY[d].label }}</span>
           <span v-if="mine.has(d)" class="rounded-4px bg-brand-600 px-1.5 text-11px font-600 leading-18px text-white">当前身份</span>
@@ -114,7 +125,7 @@ function switchTo(e: SessionUser) {
     <div class="qs-card overflow-hidden">
       <div class="flex items-center gap-3 border-b border-line px-5 py-3">
         <span class="text-15px font-600">演示账号</span>
-        <span class="text-12px text-t3">演示PIN统一是1234。姓名都是演示数据，不对应背景里的人物（《2.项目背景》§六）</span>
+        <span class="text-12px text-t3">点上面的职责卡片只看这一类。演示PIN统一是1234。姓名都是演示数据，不对应背景里的人物（《2.项目背景》§六）</span>
       </div>
       <table class="w-full border-collapse text-13px">
         <thead>
@@ -128,7 +139,7 @@ function switchTo(e: SessionUser) {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="e in accounts" :key="e.jobNo" class="border-t border-line" :class="e.jobNo === admin.user?.jobNo ? 'bg-brand-50/60' : ''">
+          <tr v-for="e in shownAccounts" :key="e.jobNo" class="border-t border-line" :class="e.jobNo === admin.user?.jobNo ? 'bg-brand-50/60' : ''">
             <td class="px-4 py-2.5 font-mono">{{ e.jobNo }}</td>
             <td class="px-2 py-2.5">
               <div class="font-600">{{ e.name }}</div>

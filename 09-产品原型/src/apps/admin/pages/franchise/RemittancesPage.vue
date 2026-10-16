@@ -5,11 +5,13 @@ import { api } from '@/shared/api'
 import MoneyText from '@/shared/components/MoneyText.vue'
 import { useRequest } from '@/shared/composables/useRequest'
 import { REMITTANCE_STATUS } from '@/shared/config/labels'
+import BillNo from '@/shared/naive/BillNo.vue'
 import { useFeedback } from '@/shared/naive/feedback'
 import PendingTag from '@/shared/naive/PendingTag.vue'
+import StatusTag from '@/shared/naive/StatusTag.vue'
 import type { Remittance } from '@/shared/types'
 import { codeName } from '@/shared/utils/format'
-import { dateTime, money, mono, muted, pagination, status, two } from '../../components/cells'
+import { clickable, dateTime, money, mono, muted, pagination, status, two } from '../../components/cells'
 import Hint from '../../components/Hint.vue'
 import PageHead from '../../components/PageHead.vue'
 import { useAdmin } from '../../stores/session'
@@ -58,6 +60,20 @@ function openNew() {
   form.value = { franchiseeId: admin.franchiseeIds[0] ?? null, dueNos: [], method: '银行转账', voucherNo: '', note: '' }
   showNew.value = true
 }
+const openNo = ref('')
+const current = computed(() => (data.value ?? []).find((r) => r.no === openNo.value) ?? null)
+const showDetail = computed({
+  get: () => !!openNo.value,
+  set: (v) => {
+    if (!v) openNo.value = ''
+  },
+})
+const { data: relatedDues } = useRequest(
+  () => (current.value ? api.franchise.dues({ franchiseeIds: [current.value.franchiseeId] }) : Promise.resolve([])),
+  { watch: [() => current.value?.no] },
+)
+const dueRows = computed(() => (relatedDues.value ?? []).filter((d) => current.value?.dueNos.includes(d.no)))
+
 async function submit() {
   if (!form.value.franchiseeId || !admin.user) return
   busy.value = true
@@ -104,11 +120,38 @@ async function submit() {
           :loading="loading && !data"
           :pagination="pagination"
           :row-key="(r: Remittance) => r.no"
+          :row-props="clickable((r: Remittance) => (openNo = r.no))"
           :scroll-x="1300"
           :bordered="false"
         />
       </div>
     </template>
+
+    <n-drawer v-model:show="showDetail" :width="520">
+      <n-drawer-content v-if="current" closable :native-scrollbar="false">
+        <template #header>
+          <span class="flex items-center gap-2">缴款 <span class="font-mono">{{ current.voucherNo }}</span> <StatusTag :def="REMITTANCE_STATUS[current.status]" /></span>
+        </template>
+        <div class="flex flex-col gap-4 text-14px">
+          <n-descriptions :column="1" label-placement="left" size="small" bordered>
+            <n-descriptions-item label="加盟商">{{ admin.franchiseeText(current.franchiseeId) }}</n-descriptions-item>
+            <n-descriptions-item label="方式">{{ current.method }}</n-descriptions-item>
+            <n-descriptions-item label="金额"><MoneyText :value="current.amount" strong /></n-descriptions-item>
+            <n-descriptions-item label="登记">{{ admin.who(current.registrantJobNo) }} · <span class="qs-num">{{ current.registeredAt }}</span></n-descriptions-item>
+            <n-descriptions-item label="中枢核对">{{ current.confirmedAt ?? '等中枢核对' }}</n-descriptions-item>
+            <n-descriptions-item v-if="current.note" label="备注">{{ current.note }}</n-descriptions-item>
+          </n-descriptions>
+          <div>
+            <div class="mb-1.5 font-600">对应应缴</div>
+            <div v-for="d in dueRows" :key="d.no" class="flex justify-between border-b border-line py-2 last:border-0">
+              <span><BillNo :no="d.no" plain /> <span class="text-12px text-t3">{{ admin.storeText(d.storeId) }} · {{ d.bizDate }}</span></span>
+              <MoneyText :value="d.total" />
+            </div>
+          </div>
+          <Hint>核对在「中枢模拟器」里演示。金额取所选应缴之和，不能手改</Hint>
+        </div>
+      </n-drawer-content>
+    </n-drawer>
 
     <n-modal v-model:show="showNew" preset="card" title="登记缴款" :style="{ width: '600px' }" :mask-closable="!busy" :segmented="{ content: true, footer: 'soft' }">
       <div class="flex flex-col gap-4">
