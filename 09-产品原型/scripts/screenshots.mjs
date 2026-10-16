@@ -8,7 +8,7 @@
  * 收银端刚做的单在管理端能直接看到；移动端要手机尺寸和触屏，单开一个上下文，拷入同一份演示库。
  * 演示库按北京时间的营业日生成，跨零点运行会中途重置，避开零点前后。
  */
-import { mkdirSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright-core'
 
@@ -275,6 +275,46 @@ await step('admin hub', async () => {
   await shot(admin, 'admin_15_hub_simulator')
 })
 
+const restAdmin = [
+  ['QS9001', 'sales', 'admin_16_sales'],
+  ['QS9001', 'returns', 'admin_17_returns'],
+  ['QS9001', 'payments', 'admin_18_payments'],
+  ['QS9001', 'receipts', 'admin_19_receipts'],
+  ['QS9001', 'return-warehouse', 'admin_20_return_warehouse'],
+  ['QS9001', 'transfers', 'admin_21_transfers'],
+  ['QS9001', 'shifts', 'admin_22_shifts'],
+  ['JMA002', 'franchise/remittances', 'admin_23_remittances'],
+  ['QS9001', 'master/products', 'admin_24_products'],
+  ['QS9001', 'master/promotions', 'admin_25_promotions'],
+  ['QS9001', 'master/staff', 'admin_26_staff'],
+]
+for (const [job, hash, name] of restAdmin) {
+  await step(name, async () => {
+    await asAdmin(job, hash)
+    await shot(admin, name)
+  })
+}
+await step('admin payment detail', async () => {
+  await asAdmin('QS9001', 'payments')
+  await openFirstRow()
+  await shot(admin, 'admin_27_payment_detail')
+})
+await step('admin transfer detail', async () => {
+  await asAdmin('QS9001', 'transfers')
+  await openFirstRow()
+  await shot(admin, 'admin_28_transfer_detail')
+})
+await step('admin product detail', async () => {
+  await asAdmin('QS9001', 'master/products')
+  await openFirstRow()
+  await shot(admin, 'admin_29_product_detail')
+})
+await step('admin dropship filter', async () => {
+  await asAdmin('QS2001', 'agent-orders?dropship=1')
+  await openFirstRow()
+  await shot(admin, 'admin_30_dropship_detail')
+})
+
 // ---------- 移动端：拷入同一份演示库 ----------
 const dbText = await admin.evaluate((key) => localStorage.getItem(key), DB_KEY)
 const phoneCtx = await browser.newContext({ ...env, viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true })
@@ -382,8 +422,43 @@ await step('mobile franchise daily', async () => {
   await due.evaluate((el) => window.scrollBy(0, el.getBoundingClientRect().top - 110))
   await shot(phone, 'mobile_12_franchise_daily_due')
 })
+await step('mobile transfer', async () => {
+  await asMobile('QS1001', 'transfer')
+  await shot(phone, 'mobile_13_transfer')
+})
+await step('mobile dropship', async () => {
+  await asMobile('QS2001', 'fulfil?tab=dropship')
+  await phone.getByText('本店代发').first().waitFor({ timeout: 4000 })
+  await shot(phone, 'mobile_14_dropship')
+})
+await step('mobile agent new', async () => {
+  await asMobile('QS1001', 'agent/new')
+  await shot(phone, 'mobile_15_agent_new')
+})
+await step('mobile replenish list', async () => {
+  await asMobile('QS1001', 'replenish')
+  await shot(phone, 'mobile_16_replenish_list')
+})
+await step('mobile stock detail', async () => {
+  await asMobile('QS1001', 'stock')
+  const first = phone.locator('.m-press, .van-cell').filter({ hasText: /SP|线材|充电/ }).first()
+  await first.click({ timeout: 4000 }).catch(async () => {
+    await phone.locator('a, .m-press').nth(1).click()
+  })
+  await settle(phone, 400)
+  await shot(phone, 'mobile_17_stock_detail')
+})
 
 await browser.close()
+
+const artifacts = process.env.ARTIFACTS_DIR ?? (existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '')
+if (artifacts) {
+  mkdirSync(artifacts, { recursive: true })
+  for (const file of readdirSync(OUT).filter((f) => f.endsWith('.png'))) {
+    cpSync(`${OUT}${file}`, `${artifacts}/${file}`)
+  }
+  console.log(`已复制到 ${artifacts}`)
+}
 
 console.log(`\n截图在 ${OUT}`)
 if (problems.length) console.log(`页面报错 ${problems.length} 条：\n${[...new Set(problems)].join('\n')}`)
