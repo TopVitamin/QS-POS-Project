@@ -11,8 +11,8 @@ import { useFeedback } from '@/shared/naive/feedback'
 import PendingTag from '@/shared/naive/PendingTag.vue'
 import StatusTag from '@/shared/naive/StatusTag.vue'
 import { payColors } from '@/shared/theme/tokens'
-import type { DailyClose } from '@/shared/types'
-import { formatMoney } from '@/shared/utils/format'
+import type { DailyClose, Shift } from '@/shared/types'
+import { formatMoney, orEmpty } from '@/shared/utils/format'
 import { addDays, todayBizDate, weekdayOf } from '@/shared/utils/time'
 import { bill, clickable, dateTime, money, muted, pagination, two } from '../../components/cells'
 import Hint from '../../components/Hint.vue'
@@ -89,6 +89,20 @@ function pick(d: DailyClose) {
   storeId.value = d.storeId
   picked.value = d.bizDate
 }
+
+const openShiftNo = ref('')
+const currentShift = computed((): Shift | null => preview.value?.shifts.find((s) => s.no === openShiftNo.value) ?? null)
+const showShift = computed({
+  get: () => !!openShiftNo.value,
+  set: (v) => {
+    if (!v) openShiftNo.value = ''
+  },
+})
+const shiftMethods = computed(() => {
+  const m = currentShift.value?.summary?.byMethod
+  if (!m) return []
+  return PAY_METHODS.map((k) => ({ key: k, label: PAY_METHOD[k].label, ...m[k], net: m[k].sales - m[k].refunds }))
+})
 </script>
 
 <template>
@@ -187,7 +201,12 @@ function pick(d: DailyClose) {
         <div class="flex flex-col gap-4">
           <div class="qs-card px-4 py-3">
             <div class="mb-2 text-15px font-600">当日班次 {{ preview.shifts.length }}</div>
-            <div v-for="s in preview.shifts" :key="s.no" class="flex items-center gap-3 border-t border-line py-2.5 first:border-0">
+            <div
+              v-for="s in preview.shifts"
+              :key="s.no"
+              class="flex cursor-pointer items-center gap-3 border-t border-line py-2.5 first:border-0 hover:bg-subtle"
+              @click="openShiftNo = s.no"
+            >
               <div class="min-w-0 flex-1 leading-tight">
                 <div class="flex items-center gap-2"><BillNo :no="s.no" plain /> <StatusTag :def="SHIFT_STATUS[s.status]" /></div>
                 <div class="mt-0.5 text-12px text-t3">{{ s.registerNo }}号台 · {{ admin.who(s.cashierJobNo) }} · <span class="qs-num">{{ s.openedAt.slice(11, 16) }}–{{ s.closedAt?.slice(11, 16) ?? '' }}</span></div>
@@ -245,7 +264,50 @@ function pick(d: DailyClose) {
           :bordered="false"
         />
       </div>
-      <div class="mt-2 text-12px text-t3">点一行，上方切到那家店那一天</div>
+      <div class="mt-2 text-12px text-t3">点一行，上方切到那家店那一天；点当日班次打开交班明细</div>
     </template>
+
+    <n-drawer v-model:show="showShift" :width="560">
+      <n-drawer-content v-if="currentShift" closable :native-scrollbar="false">
+        <template #header>
+          <span class="flex items-center gap-2">班次 <BillNo :no="currentShift.no" /> <StatusTag :def="SHIFT_STATUS[currentShift.status]" /></span>
+        </template>
+        <div class="flex flex-col gap-4 text-14px">
+          <n-descriptions :column="2" label-placement="left" size="small" bordered>
+            <n-descriptions-item label="门店" :span="2">{{ admin.storeText(currentShift.storeId) }}</n-descriptions-item>
+            <n-descriptions-item label="收银台">{{ currentShift.registerNo }}号</n-descriptions-item>
+            <n-descriptions-item label="收银员">{{ admin.who(currentShift.cashierJobNo) }}</n-descriptions-item>
+            <n-descriptions-item label="开班"><span class="qs-num">{{ currentShift.openedAt }}</span></n-descriptions-item>
+            <n-descriptions-item label="交班"><span class="qs-num">{{ orEmpty(currentShift.closedAt) }}</span></n-descriptions-item>
+          </n-descriptions>
+          <div class="overflow-hidden rounded-10px border border-line">
+            <div class="grid grid-cols-[1fr_100px_100px_100px] bg-subtle px-3 py-2 text-12px font-600 text-t2">
+              <span>支付方式</span><span class="text-right">收款</span><span class="text-right">退款</span><span class="text-right">净额</span>
+            </div>
+            <div v-for="m in shiftMethods" :key="m.key" class="grid grid-cols-[1fr_100px_100px_100px] items-center border-t border-line px-3 py-2">
+              <span class="flex items-center gap-2"><span class="h-8px w-8px rounded-full" :style="{ background: payColors[m.key] }" />{{ m.label }}</span>
+              <MoneyText :value="m.sales" class="text-right" />
+              <MoneyText :value="m.refunds" class="text-right" :tone="m.refunds ? 'promo' : 'muted'" />
+              <MoneyText :value="m.net" class="text-right font-600" />
+            </div>
+          </div>
+          <div class="rounded-12px bg-subtle px-4 py-3">
+            <div class="flex justify-between py-1"><span class="text-t2">备用金</span><MoneyText :value="currentShift.float" /></div>
+            <div class="flex justify-between py-1"><span class="text-t2">＋ 现金收款</span><MoneyText :value="currentShift.summary?.byMethod.cash.sales" /></div>
+            <div class="flex justify-between py-1"><span class="text-t2">− 现金退款</span><MoneyText :value="currentShift.summary?.byMethod.cash.refunds" /></div>
+            <div class="flex justify-between border-t border-line-strong py-1.5 font-600"><span>应有现金</span><MoneyText :value="currentShift.summary?.expectedCash" strong /></div>
+            <template v-if="currentShift.status === 'closed'">
+              <div class="flex justify-between py-1"><span class="text-t2">实点现金</span><MoneyText :value="currentShift.countedCash" strong /></div>
+              <div class="flex justify-between py-1">
+                <span class="text-t2">差异</span>
+                <MoneyText :value="currentShift.cashDiff ?? 0" sign strong :tone="currentShift.cashDiff ? 'bad' : 'muted'" />
+              </div>
+              <div v-if="currentShift.diffNote" class="mt-1 rounded-8px bg-white px-3 py-2 text-13px">差异说明：{{ currentShift.diffNote }}</div>
+            </template>
+            <div v-else class="pt-1 text-12px text-t3">当班中，数字随收款实时变化；实点现金在收银端交班时录入</div>
+          </div>
+        </div>
+      </n-drawer-content>
+    </n-drawer>
   </div>
 </template>

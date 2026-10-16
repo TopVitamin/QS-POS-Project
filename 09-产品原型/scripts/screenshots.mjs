@@ -221,6 +221,8 @@ await step('admin sale detail', async () => {
 await step('admin pickups', async () => {
   await asAdmin('QS9001', 'pickups')
   await shot(admin, 'admin_03_pickups')
+  await openFirstRow()
+  await shot(admin, 'admin_03b_pickup_detail')
 })
 await step('admin agent order', async () => {
   await asAdmin('QS9001', 'agent-orders')
@@ -230,6 +232,8 @@ await step('admin agent order', async () => {
 await step('admin replenishments', async () => {
   await asAdmin('QS9001', 'replenishments')
   await shot(admin, 'admin_05_replenishments')
+  await openFirstRow()
+  await shot(admin, 'admin_05b_replenishment_detail')
 })
 await step('admin stocktake', async () => {
   await asAdmin('QS1001', 'stocktakes')
@@ -239,14 +243,22 @@ await step('admin stocktake', async () => {
 await step('admin inventory', async () => {
   await asAdmin('QS9001', 'inventory')
   await shot(admin, 'admin_07_inventory')
+  await openFirstRow()
+  await shot(admin, 'admin_07b_inventory_detail')
 })
 await step('admin daily close', async () => {
   await asAdmin('QS1001', 'daily-close')
   await shot(admin, 'admin_08_daily_close')
+  await admin.locator('.qs-card').filter({ hasText: '当日班次' }).locator('.cursor-pointer').first().click()
+  await admin.locator('.n-drawer').waitFor()
+  await shot(admin, 'admin_08b_daily_close_shift')
+  await admin.keyboard.press('Escape')
 })
 await step('admin franchise dues', async () => {
   await asAdmin('JMA002', 'franchise/dues')
   await shot(admin, 'admin_09_franchise_dues')
+  await openFirstRow()
+  await shot(admin, 'admin_09b_due_detail')
 })
 await step('admin settlement', async () => {
   await asAdmin('JMA001', 'franchise/settlements')
@@ -261,6 +273,8 @@ await step('admin trace', async () => {
 await step('admin logs', async () => {
   await asAdmin('QS1001', 'audit/logs')
   await shot(admin, 'admin_12_audit_logs')
+  await openFirstRow()
+  await shot(admin, 'admin_12b_log_detail')
 })
 await step('admin roles', async () => {
   await asAdmin('SYS001', 'system/roles')
@@ -276,22 +290,26 @@ await step('admin hub', async () => {
 })
 
 const restAdmin = [
-  ['QS9001', 'sales', 'admin_16_sales'],
-  ['QS9001', 'returns', 'admin_17_returns'],
-  ['QS9001', 'payments', 'admin_18_payments'],
-  ['QS9001', 'receipts', 'admin_19_receipts'],
-  ['QS9001', 'return-warehouse', 'admin_20_return_warehouse'],
-  ['QS9001', 'transfers', 'admin_21_transfers'],
-  ['QS9001', 'shifts', 'admin_22_shifts'],
-  ['JMA002', 'franchise/remittances', 'admin_23_remittances'],
-  ['QS9001', 'master/products', 'admin_24_products'],
-  ['QS9001', 'master/promotions', 'admin_25_promotions'],
-  ['QS9001', 'master/staff', 'admin_26_staff'],
+  ['QS9001', 'sales', 'admin_16_sales', false],
+  ['QS9001', 'returns', 'admin_17_returns', true],
+  ['QS9001', 'payments', 'admin_18_payments', false],
+  ['QS9001', 'receipts', 'admin_19_receipts', true],
+  ['QS9001', 'return-warehouse', 'admin_20_return_warehouse', true],
+  ['QS9001', 'transfers', 'admin_21_transfers', false],
+  ['QS9001', 'shifts', 'admin_22_shifts', true],
+  ['JMA002', 'franchise/remittances', 'admin_23_remittances', true],
+  ['QS9001', 'master/products', 'admin_24_products', false],
+  ['QS9001', 'master/promotions', 'admin_25_promotions', true],
+  ['QS9001', 'master/staff', 'admin_26_staff', true],
 ]
-for (const [job, hash, name] of restAdmin) {
+for (const [job, hash, name, drawer] of restAdmin) {
   await step(name, async () => {
     await asAdmin(job, hash)
     await shot(admin, name)
+    if (drawer) {
+      await openFirstRow()
+      await shot(admin, `${name}_detail`)
+    }
   })
 }
 await step('admin payment detail', async () => {
@@ -441,12 +459,68 @@ await step('mobile replenish list', async () => {
 })
 await step('mobile stock detail', async () => {
   await asMobile('QS1001', 'stock')
-  const first = phone.locator('.m-press, .van-cell').filter({ hasText: /SP|线材|充电/ }).first()
-  await first.click({ timeout: 4000 }).catch(async () => {
-    await phone.locator('a, .m-press').nth(1).click()
-  })
+  await phone.locator('a[href*="stock/"]').first().click()
+  await phone.waitForURL(/stock\/.+/, { timeout: 4000 })
   await settle(phone, 400)
   await shot(phone, 'mobile_17_stock_detail')
+})
+await step('mobile receive list', async () => {
+  await asMobile('QS1001', 'receive')
+  await shot(phone, 'mobile_18_receive_list')
+})
+await step('mobile stocktake list', async () => {
+  await asMobile('QS1001', 'stocktake')
+  await shot(phone, 'mobile_19_stocktake_list')
+})
+await step('mobile replenish detail', async () => {
+  await asMobile('QS1001', 'replenish')
+  await phone.locator('.m-press').first().click()
+  await phone.locator('.van-popup--show').waitFor({ timeout: 4000 })
+  await shot(phone, 'mobile_20_replenish_detail')
+})
+await step('mobile transfer new', async () => {
+  await asMobile('QS1001', 'transfer')
+  await phone.locator('.m-press').first().click()
+  await phone.locator('.van-popup--show').waitFor({ timeout: 4000 })
+  await shot(phone, 'mobile_21_transfer_detail')
+  await phone.locator('.van-popup__close-icon').first().click().catch(() => {})
+  await phone.getByRole('button', { name: '新建调拨申请' }).click()
+  await phone.getByText('新建调拨申请').waitFor({ timeout: 4000 })
+  await shot(phone, 'mobile_22_transfer_new')
+})
+await step('mobile return-wh detail', async () => {
+  await asMobile('QS1001', 'return-wh')
+  await phone.locator('.m-press').first().click()
+  await phone.locator('.van-popup--show').waitFor({ timeout: 4000 })
+  await shot(phone, 'mobile_23_return_wh_detail')
+})
+await step('mobile fulfil pickup detail', async () => {
+  await asMobile('QS1001', 'fulfil')
+  await phone.locator('.m-press').first().click()
+  await phone.locator('.van-popup--show').waitFor({ timeout: 4000 })
+  await shot(phone, 'mobile_24_fulfil_pickup_detail')
+})
+await step('mobile dropship detail', async () => {
+  await asMobile('QS2001', 'fulfil?tab=dropship')
+  await phone.getByText('本店代发').first().waitFor({ timeout: 4000 })
+  await phone.locator('.m-press').first().click()
+  await phone.locator('.van-popup--show').waitFor({ timeout: 4000 })
+  await shot(phone, 'mobile_25_dropship_detail')
+})
+await step('mobile daily shift', async () => {
+  await asMobile('QS1001', 'daily')
+  await phone.locator('.m-press').first().click()
+  await phone.locator('.van-popup--show').waitFor({ timeout: 4000 })
+  await shot(phone, 'mobile_26_daily_shift')
+})
+await step('mobile performance detail', async () => {
+  await asMobile('QS1001', 'performance')
+  const card = phone.locator('.m-press').first()
+  if (await card.count()) {
+    await card.click()
+    await phone.locator('.van-popup--show').waitFor({ timeout: 4000 })
+  }
+  await shot(phone, 'mobile_27_performance_detail')
 })
 
 await browser.close()
